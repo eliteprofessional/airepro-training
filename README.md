@@ -20,11 +20,11 @@ npm install
 npm run dev:all
 ```
 
-- Public app (Vite): http://localhost:5173/support  
-- API (Express): http://localhost:8787/api/…  
-- Admin: http://localhost:5173/admin/login  
+- Public app (Vite): http://127.0.0.1:5174/support  
+- API (Express): http://127.0.0.1:8787/api/…  
+- Admin: http://127.0.0.1:5174/admin/login  
 
-Vite proxies `/api` to Express in development.
+Vite listens on **5174** (avoids clashing with Hire on 5173) and proxies `/api` to Express in development.
 
 ## Scripts
 
@@ -53,10 +53,35 @@ See `.env.example`:
 | Variable | Description |
 | --- | --- |
 | `PORT` | Express listen port (default `8787`) |
+| `HOST` | Bind address (default `0.0.0.0`) |
 | `ADMIN_PASSWORD` | Shared password for `/admin/login` |
 | `ADMIN_TOKEN_SECRET` | JWT signing secret |
 
 Do not commit `.env`.
+
+## Docker
+
+Single production service: Express API + built SPA + writable support docs.
+
+```bash
+cp .env.example .env
+# set strong ADMIN_PASSWORD and ADMIN_TOKEN_SECRET
+docker compose up --build -d
+```
+
+Open http://localhost:8787/support (and `/admin/login`).
+
+- Image build is multi-stage (`Dockerfile`)
+- Compose maps port `8787` and mounts volume `support-content` for persisted markdown/catalog
+- On first boot, empty volumes are seeded from the image’s support docs
+
+Useful commands:
+
+```bash
+docker compose logs -f airepro-support
+docker compose ps
+docker compose down
+```
 
 ## Content layout
 
@@ -110,7 +135,7 @@ Prefer the Admin UI so catalog and files stay in sync.
 
 ## Deploy notes
 
-Default hosting is a **single Express process**: API + `dist/` SPA + writable `public/support/`. CDN-only static hosting cannot use admin CRUD unless the Node server is running.
+Default hosting is a **single Express process**: API + `dist/` SPA + writable `public/support/`. Prefer **Docker Compose** for production-like deploys. CDN-only static hosting cannot use admin CRUD unless the Node server is running.
 
 ## Out of scope
 

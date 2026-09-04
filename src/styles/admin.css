@@ -1,0 +1,171 @@
+.admin-page .page-hero,
+.admin-page .admin-header {
+  margin-bottom: 1.5rem;
+}
+
+.admin-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.admin-header h1 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  letter-spacing: -0.02em;
+}
+
+.admin-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.admin-card {
+  max-width: 52rem;
+  padding: 1.35rem 1.35rem 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-elevated);
+  box-shadow: var(--shadow);
+}
+
+.admin-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.admin-field span {
+  font-weight: 600;
+  color: var(--slate);
+}
+
+.admin-field small {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.admin-field input,
+.admin-field textarea {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  font: inherit;
+  color: var(--ink);
+  background: #fff;
+}
+
+.admin-field input:disabled {
+  background: #eef2ef;
+  color: var(--muted);
+}
+
+.admin-markdown {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 18rem;
+}
+
+.admin-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+}
+
+.admin-checks label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 600;
+  color: var(--slate);
+}
+
+.admin-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.admin-alert {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.admin-alert--error {
+  background: #f8e8e8;
+  color: var(--danger);
+  border: 1px solid #e4c0c0;
+}
+
+.admin-alert--ok {
+  background: var(--accent-soft);
+  color: var(--accent-hover);
+  border: 1px solid #c7dfd4;
+}
+
+.admin-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-elevated);
+  box-shadow: var(--shadow);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.98rem;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 0.85rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.admin-table th {
+  background: #eef4f0;
+  font-weight: 700;
+}
+
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-table__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.button--danger {
+  background: #f8e8e8;
+  color: var(--danger);
+  border-color: #e4c0c0;
+}
+
+.button--danger:hover {
+  background: #f1d4d4;
+  color: #6e2222;
+}
+
+@media (max-width: 640px) {
+  .admin-card {
+    padding: 1.1rem 1rem 1.25rem;
+  }
+}
