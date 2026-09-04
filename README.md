@@ -104,6 +104,17 @@ docker compose down
 
 Optional combined image (API serves SPA too): `docker build -f Dockerfile -t airepro-support:all-in-one .` with `SERVE_FRONTEND=true`.
 
+## Jenkins
+
+Repo root [`Jenkinsfile`](Jenkinsfile) deploys both containers on the agent:
+
+| Service | Domain | Loopback port |
+| --- | --- | --- |
+| Frontend | `support.airepro.in` | `409` |
+| Backend | `support-s.airepro.in` | `410` |
+
+Provide `ADMIN_PASSWORD` and `ADMIN_TOKEN_SECRET` as Jenkins job env, or place them in `~/.secrets/airepro-support.env` on the agent. If the Jenkins user cannot talk to Docker, set job env `DOCKER=sudo docker`.
+
 ## Content layout
 
 ```
