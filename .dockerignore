@@ -6,8 +6,6 @@ dist-ssr
 .env
 .env.*
 !.env.example
-*.md
-!public/support/*.md
 README.md
 .vscode
 .idea
@@ -15,6 +13,5 @@ README.md
 coverage
 *.log
 npm-debug.log*
-Dockerfile
 docker-compose*.yml
 .dockerignore

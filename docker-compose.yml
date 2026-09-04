@@ -1,20 +1,21 @@
 services:
-  airepro-support:
+  support-backend:
     build:
       context: .
-      dockerfile: Dockerfile
-    image: airepro-support:latest
-    container_name: airepro-support
+      dockerfile: Dockerfile.backend
+    image: airepro-support-backend:latest
+    container_name: airepro-support-backend
     ports:
-      - "${PORT:-8787}:8787"
+      - "${BACKEND_PORT:-410}:8787"
     environment:
       NODE_ENV: production
       PORT: 8787
       HOST: 0.0.0.0
+      SERVE_FRONTEND: "false"
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://support.airepro.in}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-change-me}
       ADMIN_TOKEN_SECRET: ${ADMIN_TOKEN_SECRET:-change-me-to-a-long-random-string}
     volumes:
-      # Persist admin-edited markdown + catalog across restarts
       - support-content:/app/public/support
     restart: unless-stopped
     healthcheck:
@@ -29,6 +30,27 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
+
+  support-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-https://support-s.airepro.in}
+    image: airepro-support-frontend:latest
+    container_name: airepro-support-frontend
+    ports:
+      - "${FRONTEND_PORT:-409}:80"
+    depends_on:
+      support-backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 volumes:
   support-content:

@@ -52,16 +52,26 @@ See `.env.example`:
 
 | Variable | Description |
 | --- | --- |
-| `PORT` | Express listen port (default `8787`) |
+| `FRONTEND_PORT` | Host port for SPA container (default `409`) |
+| `BACKEND_PORT` | Host port for API container (default `410`) |
+| `VITE_API_BASE_URL` | Public backend origin baked into the SPA (`https://support-s.airepro.in`) |
+| `CORS_ORIGIN` | Allowed frontend origin(s) for API CORS (`https://support.airepro.in`) |
+| `PORT` | Express listen port inside container (default `8787`) |
 | `HOST` | Bind address (default `0.0.0.0`) |
+| `SERVE_FRONTEND` | `true` only for combined single-container mode |
 | `ADMIN_PASSWORD` | Shared password for `/admin/login` |
 | `ADMIN_TOKEN_SECRET` | JWT signing secret |
 
 Do not commit `.env`.
 
-## Docker
+## Docker (split frontend / backend)
 
-Single production service: Express API + built SPA + writable support docs.
+Production targets:
+
+| Service | Host | Host port | Container |
+| --- | --- | --- | --- |
+| Frontend | `support.airepro.in` | `409` | nginx SPA |
+| Backend | `support-s.airepro.in` | `410` | Express API + markdown |
 
 ```bash
 cp .env.example .env
@@ -69,19 +79,30 @@ cp .env.example .env
 docker compose up --build -d
 ```
 
-Open http://localhost:8787/support (and `/admin/login`).
+- Frontend: http://localhost:409/support  
+- Backend health: http://localhost:410/api/health  
+- Admin UI: http://localhost:409/admin/login  
 
-- Image build is multi-stage (`Dockerfile`)
-- Compose maps port `8787` and mounts volume `support-content` for persisted markdown/catalog
-- On first boot, empty volumes are seeded from the image’s support docs
+Point reverse proxies / DNS:
+
+- `support.airepro.in` → host port **409**
+- `support-s.airepro.in` → host port **410**
+
+Compose builds:
+
+- `Dockerfile.frontend` with `VITE_API_BASE_URL=https://support-s.airepro.in`
+- `Dockerfile.backend` with `CORS_ORIGIN=https://support.airepro.in`
+- Volume `support-content` persists admin-edited markdown/catalog
 
 Useful commands:
 
 ```bash
-docker compose logs -f airepro-support
+docker compose logs -f
 docker compose ps
 docker compose down
 ```
+
+Optional combined image (API serves SPA too): `docker build -f Dockerfile -t airepro-support:all-in-one .` with `SERVE_FRONTEND=true`.
 
 ## Content layout
 
@@ -135,7 +156,7 @@ Prefer the Admin UI so catalog and files stay in sync.
 
 ## Deploy notes
 
-Default hosting is a **single Express process**: API + `dist/` SPA + writable `public/support/`. Prefer **Docker Compose** for production-like deploys. CDN-only static hosting cannot use admin CRUD unless the Node server is running.
+Prefer **split Docker Compose**: frontend on `support.airepro.in:409`, backend on `support-s.airepro.in:410`. The SPA calls the API via `VITE_API_BASE_URL`; markdown files are served by the backend under `/support/*.md`.
 
 ## Out of scope
 

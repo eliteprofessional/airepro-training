@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import MarkdownRenderer from '../../components/support/MarkdownRenderer';
-import { fetchSupportResources } from '../../lib/api';
+import { fetchSupportResources, resolveApiUrl } from '../../lib/api';
 import { estimateReadingMinutes, extractToc } from '../../lib/markdownToc';
 
 function SupportDocumentPage() {
@@ -42,7 +42,7 @@ function SupportDocumentPage() {
           return;
         }
 
-        const response = await fetch(match.file);
+        const response = await fetch(resolveApiUrl(match.file));
         if (!response.ok) {
           throw new Error(
             'Unable to load this support document. Please try again later.',

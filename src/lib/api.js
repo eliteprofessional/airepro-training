@@ -1,5 +1,14 @@
 const TOKEN_KEY = 'airepro_support_admin_token';
 
+const API_BASE = String(import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+
+export function resolveApiUrl(path = '') {
+  if (!path) return API_BASE || '/';
+  if (/^https?:\/\//i.test(path)) return path;
+  const normalized = path.startsWith('/') ? path : `/${path}`;
+  return `${API_BASE}${normalized}`;
+}
+
 export function getAdminToken() {
   return sessionStorage.getItem(TOKEN_KEY);
 }
@@ -36,10 +45,10 @@ async function request(path, options = {}) {
     }
   }
 
-  const response = await fetch(path, {
+  const response = await fetch(resolveApiUrl(path), {
     ...options,
     headers,
-    credentials: 'same-origin',
+    credentials: API_BASE ? 'include' : 'same-origin',
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
 

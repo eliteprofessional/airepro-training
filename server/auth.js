@@ -44,17 +44,23 @@ export function requireAdmin(req, res, next) {
 }
 
 export function setAuthCookie(res, token) {
+  const crossSite = Boolean(process.env.CORS_ORIGIN);
   res.cookie(COOKIE_NAME, token, {
     httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    sameSite: crossSite ? 'none' : 'lax',
+    secure: process.env.NODE_ENV === 'production' || crossSite,
     maxAge: 12 * 60 * 60 * 1000,
     path: '/',
   });
 }
 
 export function clearAuthCookie(res) {
-  res.clearCookie(COOKIE_NAME, { path: '/' });
+  const crossSite = Boolean(process.env.CORS_ORIGIN);
+  res.clearCookie(COOKIE_NAME, {
+    path: '/',
+    sameSite: crossSite ? 'none' : 'lax',
+    secure: process.env.NODE_ENV === 'production' || crossSite,
+  });
 }
 
 export { COOKIE_NAME };
