@@ -86,33 +86,40 @@ pipeline {
                 ${DOCKER} volume create "${SUPPORT_VOLUME}" >/dev/null 2>&1 || true
                 ${DOCKER} rm -f "${BACKEND_CONTAINER}" >/dev/null 2>&1 || true
 
-                RUN_ARGS=(
-                  -d
-                  --name "${BACKEND_CONTAINER}"
-                  --restart unless-stopped
-                  -p "127.0.0.1:${BACKEND_PORT}:8787"
-                  -e NODE_ENV=production
-                  -e PORT=8787
-                  -e HOST=0.0.0.0
-                  -e SERVE_FRONTEND=false
-                  -e CORS_ORIGIN="${CORS_ORIGIN}"
-                  -v "${SUPPORT_VOLUME}:/app/public/support"
-                )
-
                 if [ -f "${SECRETS_FILE}" ]; then
                   echo "Using secrets file: ${SECRETS_FILE}"
-                  RUN_ARGS+=(--env-file "${SECRETS_FILE}")
+                  ${DOCKER} run -d \
+                    --name "${BACKEND_CONTAINER}" \
+                    --restart unless-stopped \
+                    -p "127.0.0.1:${BACKEND_PORT}:8787" \
+                    -e NODE_ENV=production \
+                    -e PORT=8787 \
+                    -e HOST=0.0.0.0 \
+                    -e SERVE_FRONTEND=false \
+                    -e CORS_ORIGIN="${CORS_ORIGIN}" \
+                    --env-file "${SECRETS_FILE}" \
+                    -v "${SUPPORT_VOLUME}:/app/public/support" \
+                    "${BACKEND_IMAGE}:${BUILD_NUMBER}"
                 else
-                  if [ -z "${ADMIN_PASSWORD:-}" ] || [ -z "${ADMIN_TOKEN_SECRET:-}" ]; then
+                  if [ -z "${ADMIN_PASSWORD}" ] || [ -z "${ADMIN_TOKEN_SECRET}" ]; then
                     echo "ERROR: Set ADMIN_PASSWORD and ADMIN_TOKEN_SECRET in the Jenkins job,"
                     echo "or create ${SECRETS_FILE}"
                     exit 1
                   fi
-                  RUN_ARGS+=(-e "ADMIN_PASSWORD=${ADMIN_PASSWORD}")
-                  RUN_ARGS+=(-e "ADMIN_TOKEN_SECRET=${ADMIN_TOKEN_SECRET}")
+                  ${DOCKER} run -d \
+                    --name "${BACKEND_CONTAINER}" \
+                    --restart unless-stopped \
+                    -p "127.0.0.1:${BACKEND_PORT}:8787" \
+                    -e NODE_ENV=production \
+                    -e PORT=8787 \
+                    -e HOST=0.0.0.0 \
+                    -e SERVE_FRONTEND=false \
+                    -e CORS_ORIGIN="${CORS_ORIGIN}" \
+                    -e "ADMIN_PASSWORD=${ADMIN_PASSWORD}" \
+                    -e "ADMIN_TOKEN_SECRET=${ADMIN_TOKEN_SECRET}" \
+                    -v "${SUPPORT_VOLUME}:/app/public/support" \
+                    "${BACKEND_IMAGE}:${BUILD_NUMBER}"
                 fi
-
-                ${DOCKER} run "${RUN_ARGS[@]}" "${BACKEND_IMAGE}:${BUILD_NUMBER}"
                 '''
             }
         }
