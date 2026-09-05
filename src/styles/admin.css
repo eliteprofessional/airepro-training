@@ -65,7 +65,7 @@
 }
 
 .admin-field input:disabled {
-  background: #eef2ef;
+  background: #f1f0fb;
   color: var(--muted);
 }
 
@@ -113,7 +113,7 @@
 .admin-alert--ok {
   background: var(--accent-soft);
   color: var(--accent-hover);
-  border: 1px solid #c7dfd4;
+  border: 1px solid #f5c6ef;
 }
 
 .admin-table-wrap {
@@ -139,7 +139,7 @@
 }
 
 .admin-table th {
-  background: #eef4f0;
+  background: #f1f0fb;
   font-weight: 700;
 }
 

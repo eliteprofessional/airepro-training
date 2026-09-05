@@ -12,7 +12,7 @@ function AppLayout() {
       <header className="site-header">
         <div className="site-header__inner">
           <Link className="brand" to="/support">
-            <span className="brand__mark">Airepro</span>
+            <img className="brand__logo" src="/ap-3.png" alt="Airepro" width="120" height="32" />
             <span className="brand__label">Support</span>
           </Link>
           <nav className="site-nav" aria-label="Primary">

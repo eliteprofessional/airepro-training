@@ -32,7 +32,7 @@
 .markdown-body h2 {
   margin: 2.35rem 0 0.85rem;
   padding-bottom: 0.45rem;
-  border-bottom: 1px solid rgba(213, 221, 216, 0.95);
+  border-bottom: 1px solid rgba(228, 224, 240, 0.95);
   font-size: clamp(1.35rem, 2.2vw, 1.55rem);
 }
 
@@ -82,7 +82,7 @@
 
 .markdown-body strong {
   font-weight: 700;
-  color: #102019;
+  color: #1a1a2e;
 }
 
 .markdown-body blockquote {
@@ -90,10 +90,10 @@
   padding: 1rem 1.15rem;
   border-left: 3px solid var(--accent);
   background:
-    linear-gradient(135deg, rgba(230, 242, 237, 0.95) 0%, rgba(244, 247, 245, 0.9) 100%);
+    linear-gradient(135deg, rgba(253, 240, 251, 0.95) 0%, rgba(241, 240, 251, 0.9) 100%);
   color: var(--slate);
   border-radius: 0 14px 14px 0;
-  box-shadow: inset 0 0 0 1px rgba(26, 95, 74, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(253, 3, 220, 0.08);
 }
 
 .markdown-body blockquote p {
@@ -110,17 +110,17 @@
   font-size: 0.88em;
   padding: 0.14em 0.38em;
   border-radius: 5px;
-  background: #e8efea;
-  color: #17362c;
+  background: #f1f0fb;
+  color: #4a4660;
 }
 
 .markdown-body pre {
   overflow-x: auto;
   padding: 1.05rem 1.15rem;
-  border: 1px solid #1d3229;
+  border: 1px solid #2d2150;
   border-radius: 12px;
-  background: linear-gradient(160deg, #14221c 0%, #1a2e25 100%);
-  color: #e8f2ec;
+  background: linear-gradient(160deg, #1a1a2e 0%, #2a1f4a 100%);
+  color: #f0e8ff;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -138,7 +138,7 @@
   border: 1px solid var(--border);
   border-radius: 14px;
   background: #fff;
-  box-shadow: 0 1px 2px rgba(20, 34, 28, 0.04);
+  box-shadow: 0 1px 2px rgba(26, 26, 46, 0.04);
   -webkit-overflow-scrolling: touch;
 }
 
@@ -158,7 +158,7 @@
 }
 
 .markdown-body th {
-  background: linear-gradient(180deg, #f2f7f4 0%, #eaf2ee 100%);
+  background: linear-gradient(180deg, #f5f0ff 0%, #f1f0fb 100%);
   font-weight: 700;
   color: var(--ink);
   font-size: 0.82rem;
@@ -175,7 +175,7 @@
 }
 
 .markdown-body tbody tr:hover {
-  background: rgba(230, 242, 237, 0.45);
+  background: rgba(253, 3, 220, 0.06);
 }
 
 .markdown-body td:first-child {
