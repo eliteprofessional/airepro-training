@@ -53,7 +53,7 @@ See `.env.example`:
 | Variable | Description |
 | --- | --- |
 | `FRONTEND_PORT` | Host port for SPA container (default `409`) |
-| `BACKEND_PORT` | Host port for API container (default `410`) |
+| `BACKEND_PORT` | Host port for API container (default `1410`) |
 | `VITE_API_BASE_URL` | Public backend origin baked into the SPA (`https://support-s.airepro.in`) |
 | `CORS_ORIGIN` | Allowed frontend origin(s) for API CORS (`https://support.airepro.in`) |
 | `PORT` | Express listen port inside container (default `8787`) |
@@ -71,7 +71,7 @@ Production targets:
 | Service | Host | Host port | Container |
 | --- | --- | --- | --- |
 | Frontend | `support.airepro.in` | `409` | nginx SPA |
-| Backend | `support-s.airepro.in` | `410` | Express API + markdown |
+| Backend | `support-s.airepro.in` | `1410` | Express API + markdown |
 
 ```bash
 cp .env.example .env
@@ -80,13 +80,13 @@ docker compose up --build -d
 ```
 
 - Frontend: http://localhost:409/support  
-- Backend health: http://localhost:410/api/health  
+- Backend health: http://localhost:1410/api/health  
 - Admin UI: http://localhost:409/admin/login  
 
 Point reverse proxies / DNS:
 
 - `support.airepro.in` → host port **409**
-- `support-s.airepro.in` → host port **410**
+- `support-s.airepro.in` → host port **1410**
 
 Compose builds:
 
@@ -111,7 +111,7 @@ Repo root [`Jenkinsfile`](Jenkinsfile) deploys both containers on the agent:
 | Service | Domain | Loopback port |
 | --- | --- | --- |
 | Frontend | `support.airepro.in` | `409` |
-| Backend | `support-s.airepro.in` | `410` |
+| Backend | `support-s.airepro.in` | `1410` |
 
 Provide `ADMIN_PASSWORD` and `ADMIN_TOKEN_SECRET` as Jenkins job env, or place them in `~/.secrets/airepro-support.env` on the agent. If the Jenkins user cannot talk to Docker, set job env `DOCKER=sudo docker`.
 
@@ -167,7 +167,7 @@ Prefer the Admin UI so catalog and files stay in sync.
 
 ## Deploy notes
 
-Prefer **split Docker Compose**: frontend on `support.airepro.in:409`, backend on `support-s.airepro.in:410`. The SPA calls the API via `VITE_API_BASE_URL`; markdown files are served by the backend under `/support/*.md`.
+Prefer **split Docker Compose**: frontend on `support.airepro.in:409`, backend on `support-s.airepro.in:1410`. The SPA calls the API via `VITE_API_BASE_URL`; markdown files are served by the backend under `/support/*.md`.
 
 ## Out of scope
 

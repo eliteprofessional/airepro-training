@@ -3,13 +3,13 @@
  *
  * Domains / ports (override via Jenkins job env):
  * - Frontend SPA: https://support.airepro.in  → 127.0.0.1:409
- * - Backend API:  https://support-s.airepro.in → 127.0.0.1:410
+ * - Backend API:  https://support-s.airepro.in → 127.0.0.1:1410
  *
  * Prerequisites:
  * - Docker on the agent. If jenkins is not in the `docker` group, set DOCKER='sudo docker'.
  * - Admin secrets via Jenkins env or ~/.secrets/airepro-support.env:
  *     ADMIN_PASSWORD, ADMIN_TOKEN_SECRET
- * - Reverse proxy / Cloudflare Tunnel should target loopback 409 and 410.
+ * - Reverse proxy / Cloudflare Tunnel should target loopback 409 and 1410.
  */
 
 pipeline {
@@ -27,7 +27,7 @@ pipeline {
         FRONTEND_CONTAINER  = "${env.FRONTEND_CONTAINER ?: 'airepro-support-frontend'}"
         BACKEND_CONTAINER   = "${env.BACKEND_CONTAINER ?: 'airepro-support-backend'}"
         FRONTEND_PORT       = "${env.FRONTEND_PORT ?: '409'}"
-        BACKEND_PORT        = "${env.BACKEND_PORT ?: '410'}"
+        BACKEND_PORT        = "${env.BACKEND_PORT ?: '1410'}"
         DOMAIN              = "${env.DOMAIN ?: 'support.airepro.in'}"
         BACKEND_DOMAIN      = "${env.BACKEND_DOMAIN ?: 'support-s.airepro.in'}"
         VITE_API_BASE_URL   = "${env.VITE_API_BASE_URL ?: 'https://support-s.airepro.in'}"
