@@ -2,7 +2,7 @@
 
 Standalone React + Vite documentation portal for Airepro (AD-1471), with a co-located Express admin API for CRUD on support markdown.
 
-Independent of `hireFrontend` and other monorepo frontends.
+Independent of `hireFrontend` and other monorepo frontends. UI theme matches [stage.airepro.in](https://stage.airepro.in/) (magenta/violet accents, Inter/Poppins, Airepro logo).
 
 ## Stack
 
@@ -15,9 +15,9 @@ Independent of `hireFrontend` and other monorepo frontends.
 
 ```bash
 cp .env.example .env
-# edit ADMIN_PASSWORD and ADMIN_TOKEN_SECRET
+# set ADMIN_PASSWORD and ADMIN_TOKEN_SECRET (and other REPLACE_ME values)
 npm install
-npm run dev:all
+npm run dev
 ```
 
 - Public app (Vite): http://127.0.0.1:5174/support  
@@ -30,14 +30,14 @@ Vite listens on **5174** (avoids clashing with Hire on 5173) and proxies `/api` 
 
 | Script | Purpose |
 | --- | --- |
-| `npm run dev` | Vite only |
+| `npm run dev` | Vite + Express together |
+| `npm run dev:web` | Vite only |
 | `npm run dev:server` | Express API only |
-| `npm run dev:all` | Vite + Express together |
 | `npm run build` | Production frontend build → `dist/` |
 | `npm start` | Serve `dist/` + API + writable support files (set `NODE_ENV=production`) |
 | `npm run preview` | Vite static preview (no admin API) |
 
-Production:
+Production (single Node process):
 
 ```bash
 npm run build
@@ -48,89 +48,71 @@ Open http://localhost:8787/support (port from `PORT`).
 
 ## Environment
 
-See `.env.example`:
+See [`.env.example`](.env.example) — copy to `.env` and replace placeholders before deploy.
 
 | Variable | Description |
 | --- | --- |
+| `DOMAIN` | Public frontend hostname (`support.airepro.in`) |
+| `BACKEND_DOMAIN` | Public API hostname (`support-s.airepro.in`) |
 | `FRONTEND_PORT` | Host port for SPA container (default `409`) |
-| `BACKEND_PORT` | Host port for API container (default `1410`) |
-| `VITE_API_BASE_URL` | Public backend origin baked into the SPA (`https://support-s.airepro.in`) |
+| `BACKEND_PORT` | Host port for API container (default `1410`) — tunnel target for `support-s` |
+| `VITE_API_BASE_URL` | Public API origin baked into the SPA (`https://support-s.airepro.in`) |
 | `CORS_ORIGIN` | Allowed frontend origin(s) for API CORS (`https://support.airepro.in`) |
-| `PORT` | Express listen port inside container (default `8787`) |
+| `PORT` | Express listen port **inside** the container / local Node (default `8787`) |
 | `HOST` | Bind address (default `0.0.0.0`) |
 | `SERVE_FRONTEND` | `true` only for combined single-container mode |
 | `ADMIN_PASSWORD` | Shared password for `/admin/login` |
 | `ADMIN_TOKEN_SECRET` | JWT signing secret |
 
-Do not commit `.env`.
+Do not commit `.env`. For Jenkins, copy `ADMIN_*` (and any overrides) to `/var/lib/jenkins/.secrets/airepro-support.env` on the agent.
 
-## Docker (split frontend / backend)
+## Changing content later
 
-Production targets:
+Catalog + bodies live under `public/support/`. Prefer the **Admin UI** so files and `resources.json` stay in sync.
 
-| Service | Host | Host port | Container |
-| --- | --- | --- | --- |
-| Frontend | `support.airepro.in` | `409` | nginx SPA |
-| Backend | `support-s.airepro.in` | `1410` | Express API + markdown |
+### Local / repo edits
 
-```bash
-cp .env.example .env
-# set strong ADMIN_PASSWORD and ADMIN_TOKEN_SECRET
-docker compose up --build -d
-```
+1. Open http://127.0.0.1:5174/admin/login (or production Admin URL).
+2. Create / edit / delete documents — each save writes `public/support/<slug>.md` and updates `resources.json`.
+3. Or edit files by hand:
+   - Add `public/support/my-doc.md`
+   - Add a matching entry in `public/support/resources.json` (`id`, `slug`, `title`, `description`, `file`, `preview`)
+4. Slugs must match `[a-z0-9-]+`.
 
-- Frontend: http://localhost:409/support  
-- Backend health: http://localhost:1410/api/health  
-- Admin UI: http://localhost:409/admin/login  
+Commit and push markdown/catalog changes if you want them in the image seed; otherwise production edits persist on the Docker volume (below).
 
-Point reverse proxies / DNS:
+### Production (Docker / Jenkins)
 
-- `support.airepro.in` → host port **409**
-- `support-s.airepro.in` → host port **1410**
+| What | Where |
+| --- | --- |
+| Live content | Docker volume `airepro-support-content` → `/app/public/support` |
+| Seed (first boot only) | Files baked into the backend image from `public/support/` |
 
-Compose builds:
+On first start, if the volume has no `resources.json`, the entrypoint copies the image seed into the volume. **Later edits via Admin** update the volume only — they are not overwritten by redeploys.
 
-- `Dockerfile.frontend` with `VITE_API_BASE_URL=https://support-s.airepro.in`
-- `Dockerfile.backend` with `CORS_ORIGIN=https://support.airepro.in`
-- Volume `support-content` persists admin-edited markdown/catalog
-
-Useful commands:
+To reset production content to the repo seed: remove/recreate the volume (destructive), then redeploy.
 
 ```bash
-docker compose logs -f
-docker compose ps
-docker compose down
+# inspect live files on the agent (example)
+docker exec -it airepro-support-backend ls -la /app/public/support
 ```
-
-Optional combined image (API serves SPA too): `docker build -f Dockerfile -t airepro-support:all-in-one .` with `SERVE_FRONTEND=true`.
-
-## Jenkins
-
-Repo root [`Jenkinsfile`](Jenkinsfile) deploys both containers on the agent:
-
-| Service | Domain | Loopback port |
-| --- | --- | --- |
-| Frontend | `support.airepro.in` | `409` |
-| Backend | `support-s.airepro.in` | `1410` |
-
-Provide `ADMIN_PASSWORD` and `ADMIN_TOKEN_SECRET` as Jenkins job env, or place them in `~/.secrets/airepro-support.env` on the agent. If the Jenkins user cannot talk to Docker, set job env `DOCKER=sudo docker`.
 
 ## Content layout
 
 ```
 public/support/
-  resources.json    # catalog (source of truth)
-  *.md              # document bodies
+  resources.json    # catalog (source of truth for cards + API)
+  *.md              # document bodies (one file per slug)
 ```
 
-Public portal loads the catalog from `GET /api/support/resources`. Markdown is still served as static files at `/support/<slug>.md` for preview and download.
+Public portal loads the catalog from `GET /api/support/resources`. Markdown is served by the **backend** at `/support/<slug>.md` (not from the SPA nginx image).
 
 ## Public routes
 
 | Path | Page |
 | --- | --- |
 | `/` | Redirects to `/support` |
-| `/support` | Landing cards |
+| `/support` | Landing / catalog |
 | `/support/:slug` | Markdown preview |
 
 ## Admin routes
@@ -154,20 +136,60 @@ Auth model: one shared password (not multi-user SSO). Login returns a JWT stored
 - `PUT /api/admin/documents/:slug` (auth)
 - `DELETE /api/admin/documents/:slug` (auth)
 
-Slugs must match `[a-z0-9-]+`. Path traversal is rejected.
+Path traversal is rejected.
 
-## Manual content edits
+## Docker (split frontend / backend)
 
-You can still add a doc by:
+Production targets:
 
-1. Creating `public/support/my-doc.md`
-2. Adding an entry to `public/support/resources.json`
+| Service | Host | Host port | Container |
+| --- | --- | --- | --- |
+| Frontend | `support.airepro.in` | `409` | nginx SPA |
+| Backend | `support-s.airepro.in` | `1410` | Express API + markdown |
 
-Prefer the Admin UI so catalog and files stay in sync.
+```bash
+cp .env.example .env
+# set strong ADMIN_PASSWORD and ADMIN_TOKEN_SECRET
+docker compose up --build -d
+```
+
+- Frontend: http://localhost:409/support  
+- Backend health: http://localhost:1410/api/health  
+- Admin UI: http://localhost:409/admin/login  
+
+Point reverse proxies / Cloudflare Tunnel:
+
+- `support.airepro.in` → host port **409**
+- `support-s.airepro.in` → host port **1410**
+
+Compose builds:
+
+- `Dockerfile.frontend` with `VITE_API_BASE_URL=https://support-s.airepro.in` (markdown folder is stripped from the SPA image so `/support` is not a static directory)
+- `Dockerfile.backend` with `CORS_ORIGIN=https://support.airepro.in`
+- Volume `support-content` / `airepro-support-content` persists admin-edited markdown/catalog
+
+```bash
+docker compose logs -f
+docker compose ps
+docker compose down
+```
+
+Optional combined image (API serves SPA too): `docker build -f Dockerfile -t airepro-support:all-in-one .` with `SERVE_FRONTEND=true`.
+
+## Jenkins
+
+Repo root [`Jenkinsfile`](Jenkinsfile) deploys both containers on the agent:
+
+| Service | Domain | Loopback port |
+| --- | --- | --- |
+| Frontend | `support.airepro.in` | `409` |
+| Backend | `support-s.airepro.in` | `1410` |
+
+Provide `ADMIN_PASSWORD` and `ADMIN_TOKEN_SECRET` as Jenkins job env, or place them in `~/.secrets/airepro-support.env` on the agent. If the Jenkins user cannot talk to Docker, set job env `DOCKER=sudo docker`.
 
 ## Deploy notes
 
-Prefer **split Docker Compose**: frontend on `support.airepro.in:409`, backend on `support-s.airepro.in:1410`. The SPA calls the API via `VITE_API_BASE_URL`; markdown files are served by the backend under `/support/*.md`.
+Prefer **split** frontend/backend: SPA on `support.airepro.in:409`, API on `support-s.airepro.in:1410`. The SPA calls the API via `VITE_API_BASE_URL`; markdown files are served by the backend under `/support/*.md`.
 
 ## Out of scope
 
