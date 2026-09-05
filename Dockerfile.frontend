@@ -11,8 +11,14 @@ COPY index.html vite.config.js ./
 COPY public ./public
 COPY src ./src
 
+# Markdown/catalog belong on the API host only. If they ship in dist/support/,
+# nginx treats /support as a static directory (301 → 403) instead of the SPA route.
+RUN rm -rf public/support
+
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
-RUN npm run build
+RUN npm run build \
+  && test ! -d dist/support \
+  && test -f dist/index.html
 
 FROM nginx:stable-alpine AS production
 COPY nginx.conf /etc/nginx/conf.d/default.conf

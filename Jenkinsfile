@@ -166,8 +166,16 @@ pipeline {
                 done
                 curl -fsS -o /dev/null -w "frontend Host %{http_code}\\n" \
                   -H "Host: ${DOMAIN}" "http://127.0.0.1:${FRONTEND_PORT}/"
-                curl -fsS -o /dev/null -w "frontend /support %{http_code}\\n" \
-                  -H "Host: ${DOMAIN}" "http://127.0.0.1:${FRONTEND_PORT}/support"
+                code_support=$(curl -sS -o /dev/null -w "%{http_code}" \
+                  -H "Host: ${DOMAIN}" "http://127.0.0.1:${FRONTEND_PORT}/support")
+                echo "frontend /support ${code_support}"
+                [ "${code_support}" = "200" ] || {
+                  echo "ERROR: expected /support to return 200, got ${code_support}"
+                  ${DOCKER} logs --tail 40 "${FRONTEND_CONTAINER}" || true
+                  exit 1
+                }
+                curl -fsS -o /dev/null -w "backend resources %{http_code}\\n" \
+                  -H "Host: ${BACKEND_DOMAIN}" "http://127.0.0.1:${BACKEND_PORT}/api/support/resources"
                 '''
             }
         }
