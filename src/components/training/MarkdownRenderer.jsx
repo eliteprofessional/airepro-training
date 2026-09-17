@@ -37,7 +37,8 @@ function headingComponent(Tag) {
   };
 }
 
-function MarkdownRenderer({ content, className = '' }) {
+function MarkdownRenderer({ content, markdown, className = '' }) {
+  const source = content ?? markdown ?? '';
   return (
     <div className={`markdown-body ${className}`.trim()}>
       <ReactMarkdown
@@ -55,7 +56,7 @@ function MarkdownRenderer({ content, className = '' }) {
           },
         }}
       >
-        {content}
+        {source}
       </ReactMarkdown>
     </div>
   );

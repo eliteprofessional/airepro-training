@@ -1,21 +1,32 @@
 import jwt from 'jsonwebtoken';
 
-const TOKEN_TTL = '12h';
-const COOKIE_NAME = 'airepro_training_admin';
+const TOKEN_TTL = process.env.TRAINING_JWT_TTL || '12h';
+export const COOKIE_NAME = 'airepro_training_session';
 
 function getSecret() {
-  const secret = process.env.ADMIN_TOKEN_SECRET;
+  const secret = process.env.TRAINING_JWT_SECRET || process.env.ADMIN_TOKEN_SECRET;
   if (!secret) {
-    throw new Error('ADMIN_TOKEN_SECRET is not configured');
+    throw new Error('TRAINING_JWT_SECRET (or ADMIN_TOKEN_SECRET) is not configured');
   }
   return secret;
 }
 
-export function issueToken() {
-  return jwt.sign({ role: 'admin' }, getSecret(), { expiresIn: TOKEN_TTL });
+export function issueSessionToken(payload) {
+  return jwt.sign(
+    {
+      sub: payload.userId,
+      email: payload.email,
+      name: payload.name,
+      roles: payload.roles || [],
+      permissions: payload.permissions || [],
+      trainingAccess: Boolean(payload.trainingAccess),
+    },
+    getSecret(),
+    { expiresIn: TOKEN_TTL },
+  );
 }
 
-export function verifyToken(token) {
+export function verifySessionToken(token) {
   return jwt.verify(token, getSecret());
 }
 
@@ -28,19 +39,6 @@ export function extractToken(req) {
     return req.cookies[COOKIE_NAME];
   }
   return null;
-}
-
-export function requireAdmin(req, res, next) {
-  try {
-    const token = extractToken(req);
-    if (!token) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-    req.admin = verifyToken(token);
-    return next();
-  } catch {
-    return res.status(401).json({ error: 'Invalid or expired token' });
-  }
 }
 
 export function setAuthCookie(res, token) {
@@ -62,5 +60,3 @@ export function clearAuthCookie(res) {
     secure: process.env.NODE_ENV === 'production' || crossSite,
   });
 }
-
-export { COOKIE_NAME };

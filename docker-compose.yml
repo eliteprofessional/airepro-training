@@ -13,10 +13,14 @@ services:
       HOST: 0.0.0.0
       SERVE_FRONTEND: "false"
       CORS_ORIGIN: ${CORS_ORIGIN:-https://training.airepro.in}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-change-me}
+      AUTH_MODE: ${AUTH_MODE:-obo}
+      OBO_API_BASE_URL: ${OBO_API_BASE_URL:-}
+      TRAINING_JWT_SECRET: ${TRAINING_JWT_SECRET:-${ADMIN_TOKEN_SECRET:-change-me-to-a-long-random-string}}
       ADMIN_TOKEN_SECRET: ${ADMIN_TOKEN_SECRET:-change-me-to-a-long-random-string}
+      TRAINING_DB_PATH: /app/data/training.sqlite
     volumes:
       - training-content:/app/public/training
+      - training-data:/app/data
     restart: unless-stopped
     healthcheck:
       test:
@@ -54,3 +58,4 @@ services:
 
 volumes:
   training-content:
+  training-data:

@@ -5,14 +5,21 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 
-import trainingRoutes from './routes/training.js';
-import adminRoutes from './routes/admin.js';
 import { createCorsOptions } from './cors.js';
-import { ROOT_DIR, TRAINING_DIR } from './resources.js';
+import { initDb } from './db/index.js';
+import { seedIfEmpty } from './db/seed.js';
+import authRoutes from './routes/auth.js';
+import portalRoutes from './routes/portal.js';
+import adminRoutes from './routes/admin.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT_DIR = path.resolve(__dirname, '..');
 
 dotenv.config({ path: path.join(ROOT_DIR, '.env') });
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+initDb();
+seedIfEmpty();
+
 const PORT = Number(process.env.PORT) || 8787;
 const DIST_DIR = path.join(ROOT_DIR, 'dist');
 const isProduction = process.env.NODE_ENV === 'production';
@@ -28,13 +35,13 @@ app.get('/api/health', (_req, res) => {
   res.json({
     ok: true,
     service: 'airepro-training-api',
+    authMode: process.env.AUTH_MODE || 'demo',
   });
 });
 
-app.use('/api/training', trainingRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/portal', portalRoutes);
 app.use('/api/admin', adminRoutes);
-
-app.use('/training', express.static(TRAINING_DIR, { fallthrough: true }));
 
 if (isProduction && serveFrontend) {
   app.use(express.static(DIST_DIR));
@@ -56,10 +63,8 @@ app.use((err, _req, res, _next) => {
 const server = app.listen(PORT, process.env.HOST || '0.0.0.0', () => {
   const host = process.env.HOST || '0.0.0.0';
   console.log(`airepro-training API listening on http://${host}:${PORT}`);
-  if (!process.env.ADMIN_PASSWORD || !process.env.ADMIN_TOKEN_SECRET) {
-    console.warn(
-      'Warning: set ADMIN_PASSWORD and ADMIN_TOKEN_SECRET in .env for admin login.',
-    );
+  if (!process.env.TRAINING_JWT_SECRET && !process.env.ADMIN_TOKEN_SECRET) {
+    console.warn('Warning: set TRAINING_JWT_SECRET (or ADMIN_TOKEN_SECRET) in .env');
   }
 });
 

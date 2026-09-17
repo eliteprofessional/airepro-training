@@ -11,6 +11,10 @@ node_modules
 dist
 dist-ssr
 *.local
+data/
+*.sqlite
+*.sqlite-journal
+_spec_extract.md
 
 # Env (keep .env.example)
 .env

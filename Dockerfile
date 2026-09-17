@@ -22,6 +22,7 @@ ENV NODE_ENV=production
 ENV PORT=8787
 ENV HOST=0.0.0.0
 ENV SERVE_FRONTEND=true
+ENV TRAINING_DB_PATH=/app/data/training.sqlite
 
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
@@ -33,8 +34,9 @@ COPY public/training /app/docker/training-seed
 COPY --from=build /app/dist ./dist
 
 RUN chmod +x /app/docker/entrypoint.sh \
+  && mkdir -p /app/data \
   && addgroup -S airepro && adduser -S airepro -G airepro \
-  && chown -R airepro:airepro /app/public/training /app/docker
+  && chown -R airepro:airepro /app/public/training /app/docker /app/data
 
 USER airepro
 

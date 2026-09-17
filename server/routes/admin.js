@@ -1,233 +1,384 @@
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
-import {
-  clearAuthCookie,
-  issueToken,
-  requireAdmin,
-  setAuthCookie,
-} from '../auth.js';
-import {
-  buildResourceEntry,
-  deleteMarkdown,
-  readMarkdown,
-  readResources,
-  sanitizeSlug,
-  toPublicResource,
-  writeMarkdown,
-  writeResources,
-} from '../resources.js';
+import { requireAuth, requireTrainingAccess, requirePermission } from '../auth/middleware.js';
+import { getDb, nowIso, uid } from '../db/index.js';
+import { writeAudit, getUserByEmail, toPublicUser, getUserById } from '../auth/service.js';
+import { ROLES, ROLE_LIST } from '../rbac.js';
+import { revokeCertification, listUserCertifications } from '../services/certification.js';
+import { hashPassword } from '../db/seed.js';
 
 const router = Router();
 
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many login attempts. Try again later.' },
+router.use(requireAuth, requireTrainingAccess);
+router.use(requirePermission('training.admin', 'training.content.manage'));
+
+function slugify(input) {
+  return String(input || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 80);
+}
+
+router.get('/meta', (_req, res) => {
+  res.json({
+    roles: ROLE_LIST,
+    documentTypes: [
+      'article',
+      'sop',
+      'checklist',
+      'decision_tree',
+      'faq',
+      'troubleshooting',
+      'tutorial',
+      'policy',
+      'quiz',
+    ],
+    categories: ['general', 'idv', 'payments', 'support', 'jobs', 'internships', 'fraud'],
+    statuses: ['DRAFT', 'IN_REVIEW', 'PUBLISHED', 'ARCHIVED'],
+  });
 });
 
-router.post('/login', loginLimiter, (req, res) => {
-  const password = req.body?.password;
-  const expected = process.env.ADMIN_PASSWORD;
-
-  if (!expected) {
-    return res.status(500).json({ error: 'Admin password is not configured' });
-  }
-
-  if (typeof password !== 'string' || password !== expected) {
-    return res.status(401).json({ error: 'Invalid password' });
-  }
-
-  try {
-    const token = issueToken();
-    setAuthCookie(res, token);
-    return res.json({ token, expiresIn: '12h' });
-  } catch (error) {
-    console.error('Failed to issue admin token', error);
-    return res.status(500).json({ error: 'Failed to create session' });
-  }
+router.get('/documents', (req, res) => {
+  const rows = getDb()
+    .prepare(
+      `SELECT d.*, s.sop_code FROM documents d
+       LEFT JOIN sops s ON s.document_id = d.id
+       ORDER BY d.updated_at DESC`,
+    )
+    .all();
+  res.json({
+    documents: rows.map((d) => ({
+      id: d.id,
+      slug: d.slug,
+      title: d.title,
+      type: d.type,
+      category: d.category,
+      status: d.status,
+      version: d.version,
+      sopCode: d.sop_code || null,
+      updatedAt: d.updated_at,
+    })),
+  });
 });
 
-router.post('/logout', (_req, res) => {
-  clearAuthCookie(res);
+router.get('/documents/:id', (req, res) => {
+  const d = getDb()
+    .prepare(
+      `SELECT d.*, s.sop_code, s.do_items_json, s.dont_items_json, s.related_sop_codes_json
+       FROM documents d LEFT JOIN sops s ON s.document_id = d.id
+       WHERE d.id = ? OR d.slug = ?`,
+    )
+    .get(req.params.id, req.params.id);
+  if (!d) return res.status(404).json({ error: 'Not found' });
+  const roles = getDb()
+    .prepare('SELECT role_id FROM document_roles WHERE document_id = ?')
+    .all(d.id)
+    .map((r) => r.role_id);
+  res.json({
+    document: {
+      ...d,
+      roles,
+      doItems: JSON.parse(d.do_items_json || '[]'),
+      dontItems: JSON.parse(d.dont_items_json || '[]'),
+      related: JSON.parse(d.related_sop_codes_json || '[]'),
+    },
+  });
+});
+
+router.post('/documents', (req, res) => {
+  const body = req.body || {};
+  const title = body.title?.trim();
+  if (!title) return res.status(400).json({ error: 'title is required' });
+  const slug = slugify(body.slug || title);
+  if (!slug) return res.status(400).json({ error: 'Invalid slug' });
+
+  const db = getDb();
+  if (db.prepare('SELECT id FROM documents WHERE slug = ?').get(slug)) {
+    return res.status(409).json({ error: 'Slug already exists' });
+  }
+
+  const id = uid('doc');
+  const ts = nowIso();
+  const status = body.status || 'DRAFT';
+  db.prepare(
+    `INSERT INTO documents (
+      id, slug, title, type, category, department, status, version, body_md, summary,
+      owner, estimated_minutes, purpose, prerequisites_json, escalation_rules_json,
+      tags_json, change_summary, author, created_at, updated_at, published_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    id,
+    slug,
+    title,
+    body.type || 'article',
+    body.category || 'general',
+    body.department || null,
+    status,
+    body.version || '1.0',
+    body.bodyMd || body.body_md || '',
+    body.summary || null,
+    body.owner || req.user.name || req.user.email,
+    body.estimatedMinutes || 10,
+    body.purpose || null,
+    JSON.stringify(body.prerequisites || []),
+    JSON.stringify(body.escalationRules || []),
+    JSON.stringify(body.tags || []),
+    body.changeSummary || 'Created via admin',
+    req.user.email,
+    ts,
+    ts,
+    status === 'PUBLISHED' ? ts : null,
+  );
+
+  if (body.type === 'sop' || body.sopCode) {
+    db.prepare(
+      `INSERT INTO sops (document_id, sop_code, do_items_json, dont_items_json, related_sop_codes_json)
+       VALUES (?, ?, ?, ?, ?)`,
+    ).run(
+      id,
+      body.sopCode || `SOP-${slug.toUpperCase().slice(0, 12)}`,
+      JSON.stringify(body.doItems || []),
+      JSON.stringify(body.dontItems || []),
+      JSON.stringify(body.related || []),
+    );
+  }
+
+  const roleStmt = db.prepare('INSERT INTO document_roles (document_id, role_id) VALUES (?, ?)');
+  for (const role of body.roles || []) {
+    if (ROLE_LIST.includes(role)) roleStmt.run(id, role);
+  }
+
+  writeAudit({
+    userId: req.user.id,
+    action: 'content.created',
+    resourceType: 'document',
+    resourceId: id,
+  });
+  res.status(201).json({ id, slug });
+});
+
+router.put('/documents/:id', (req, res) => {
+  const db = getDb();
+  const existing = db
+    .prepare('SELECT * FROM documents WHERE id = ? OR slug = ?')
+    .get(req.params.id, req.params.id);
+  if (!existing) return res.status(404).json({ error: 'Not found' });
+
+  const body = req.body || {};
+  const ts = nowIso();
+  const status = body.status || existing.status;
+  db.prepare(
+    `UPDATE documents SET title = ?, type = ?, category = ?, department = ?, status = ?, version = ?,
+     body_md = ?, summary = ?, purpose = ?, tags_json = ?, change_summary = ?, updated_at = ?,
+     published_at = CASE WHEN ? = 'PUBLISHED' AND published_at IS NULL THEN ? ELSE published_at END
+     WHERE id = ?`,
+  ).run(
+    body.title || existing.title,
+    body.type || existing.type,
+    body.category || existing.category,
+    body.department ?? existing.department,
+    status,
+    body.version || existing.version,
+    body.bodyMd ?? body.body_md ?? existing.body_md,
+    body.summary ?? existing.summary,
+    body.purpose ?? existing.purpose,
+    JSON.stringify(body.tags || JSON.parse(existing.tags_json || '[]')),
+    body.changeSummary || existing.change_summary,
+    ts,
+    status,
+    ts,
+    existing.id,
+  );
+
+  if (Array.isArray(body.roles)) {
+    db.prepare('DELETE FROM document_roles WHERE document_id = ?').run(existing.id);
+    const roleStmt = db.prepare('INSERT INTO document_roles (document_id, role_id) VALUES (?, ?)');
+    for (const role of body.roles) {
+      if (ROLE_LIST.includes(role)) roleStmt.run(existing.id, role);
+    }
+  }
+
+  writeAudit({
+    userId: req.user.id,
+    action: status === 'PUBLISHED' ? 'content.published' : 'content.updated',
+    resourceType: 'document',
+    resourceId: existing.id,
+  });
   res.json({ ok: true });
 });
 
-router.use(requireAdmin);
-
-router.get('/documents', async (_req, res) => {
-  try {
-    const resources = await readResources();
-    res.json(resources.map(toPublicResource));
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to list documents' });
-  }
+router.delete('/documents/:id', (req, res) => {
+  const db = getDb();
+  const existing = db
+    .prepare('SELECT * FROM documents WHERE id = ? OR slug = ?')
+    .get(req.params.id, req.params.id);
+  if (!existing) return res.status(404).json({ error: 'Not found' });
+  db.prepare('DELETE FROM document_roles WHERE document_id = ?').run(existing.id);
+  db.prepare('DELETE FROM sops WHERE document_id = ?').run(existing.id);
+  db.prepare('DELETE FROM documents WHERE id = ?').run(existing.id);
+  writeAudit({
+    userId: req.user.id,
+    action: 'content.deleted',
+    resourceType: 'document',
+    resourceId: existing.id,
+  });
+  res.json({ ok: true });
 });
 
-router.get('/documents/:slug', async (req, res) => {
-  try {
-    const slug = sanitizeSlug(req.params.slug);
-    if (!slug) {
-      return res.status(400).json({ error: 'Invalid slug' });
-    }
-
-    const resources = await readResources();
-    const entry = resources.find((item) => item.slug === slug);
-    if (!entry) {
-      return res.status(404).json({ error: 'Document not found' });
-    }
-
-    const markdown = await readMarkdown(slug);
-    return res.json({ ...toPublicResource(entry), markdown });
-  } catch (error) {
-    const status = error.status || 500;
-    return res.status(status).json({ error: error.message || 'Failed to load document' });
-  }
+router.get('/courses', (_req, res) => {
+  const courses = getDb().prepare('SELECT * FROM courses ORDER BY sort_order, title').all();
+  res.json({ courses });
 });
 
-router.post('/documents', async (req, res) => {
-  try {
-    const slug = sanitizeSlug(req.body?.slug);
-    const title = typeof req.body?.title === 'string' ? req.body.title.trim() : '';
-    const description =
-      typeof req.body?.description === 'string' ? req.body.description.trim() : '';
-    const markdown = typeof req.body?.markdown === 'string' ? req.body.markdown : '';
-    const preview = req.body?.preview !== false;
-    const download = req.body?.download !== false;
+router.get('/users', requirePermission('training.users.manage', 'training.admin'), (_req, res) => {
+  const users = getDb()
+    .prepare('SELECT id, email, name, department, training_access, last_login_at, created_at FROM users ORDER BY email')
+    .all()
+    .map((u) => toPublicUser(u));
+  res.json({ users });
+});
 
-    if (!slug) {
-      return res.status(400).json({ error: 'Slug must match [a-z0-9-]+' });
+router.patch(
+  '/users/:id',
+  requirePermission('training.users.manage', 'training.admin'),
+  (req, res) => {
+    const db = getDb();
+    const user = getUserById(req.params.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const body = req.body || {};
+    const ts = nowIso();
+
+    if (body.trainingAccess != null) {
+      db.prepare('UPDATE users SET training_access = ?, updated_at = ? WHERE id = ?').run(
+        body.trainingAccess ? 1 : 0,
+        ts,
+        user.id,
+      );
     }
-    if (!title) {
-      return res.status(400).json({ error: 'Title is required' });
+    if (body.name != null) {
+      db.prepare('UPDATE users SET name = ?, updated_at = ? WHERE id = ?').run(body.name, ts, user.id);
+    }
+    if (body.department != null) {
+      db.prepare('UPDATE users SET department = ?, updated_at = ? WHERE id = ?').run(
+        body.department,
+        ts,
+        user.id,
+      );
+    }
+    if (Array.isArray(body.roles)) {
+      db.prepare('DELETE FROM user_roles WHERE user_id = ?').run(user.id);
+      const stmt = db.prepare('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)');
+      for (const role of body.roles) {
+        if (ROLE_LIST.includes(role)) stmt.run(user.id, role);
+      }
     }
 
-    const resources = await readResources();
-    if (resources.some((item) => item.slug === slug)) {
-      return res.status(409).json({ error: 'A document with this slug already exists' });
-    }
-
-    const entry = buildResourceEntry({
-      slug,
-      title,
-      description,
-      preview,
-      download,
+    writeAudit({
+      userId: req.user.id,
+      action: 'users.updated',
+      resourceType: 'user',
+      resourceId: user.id,
+      meta: { roles: body.roles, trainingAccess: body.trainingAccess },
     });
+    res.json({ user: toPublicUser(getUserById(user.id)) });
+  },
+);
 
-    await writeMarkdown(slug, markdown);
-    resources.push(entry);
-    await writeResources(resources);
+router.post(
+  '/users',
+  requirePermission('training.users.manage', 'training.admin'),
+  (req, res) => {
+    const { email, name, department, roles, password, trainingAccess = true } = req.body || {};
+    if (!email) return res.status(400).json({ error: 'email is required' });
+    if (getUserByEmail(email)) return res.status(409).json({ error: 'User already exists' });
 
-    return res.status(201).json({ ...toPublicResource(entry), markdown });
-  } catch (error) {
-    console.error(error);
-    const status = error.status || 500;
-    return res.status(status).json({ error: error.message || 'Failed to create document' });
-  }
-});
+    const id = uid('user');
+    const ts = nowIso();
+    getDb()
+      .prepare(
+        `INSERT INTO users (id, email, name, department, training_access, demo_password_hash, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        id,
+        email.toLowerCase(),
+        name || email,
+        department || null,
+        trainingAccess ? 1 : 0,
+        password ? hashPassword(password) : null,
+        ts,
+        ts,
+      );
 
-router.put('/documents/:slug', async (req, res) => {
-  try {
-    const currentSlug = sanitizeSlug(req.params.slug);
-    if (!currentSlug) {
-      return res.status(400).json({ error: 'Invalid slug' });
+    const stmt = getDb().prepare('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)');
+    for (const role of roles || [ROLES.OPERATIONS_AGENT]) {
+      if (ROLE_LIST.includes(role)) stmt.run(id, role);
     }
 
-    const resources = await readResources();
-    const index = resources.findIndex((item) => item.slug === currentSlug);
-    if (index === -1) {
-      return res.status(404).json({ error: 'Document not found' });
-    }
-
-    const existing = resources[index];
-    const nextSlugRaw = req.body?.slug;
-    const nextSlug =
-      nextSlugRaw === undefined || nextSlugRaw === null || nextSlugRaw === ''
-        ? currentSlug
-        : sanitizeSlug(nextSlugRaw);
-
-    if (!nextSlug) {
-      return res.status(400).json({ error: 'Slug must match [a-z0-9-]+' });
-    }
-
-    if (nextSlug !== currentSlug && resources.some((item) => item.slug === nextSlug)) {
-      return res.status(409).json({ error: 'A document with this slug already exists' });
-    }
-
-    const title =
-      typeof req.body?.title === 'string' ? req.body.title.trim() : existing.title;
-    if (!title) {
-      return res.status(400).json({ error: 'Title is required' });
-    }
-
-    const description =
-      typeof req.body?.description === 'string'
-        ? req.body.description.trim()
-        : existing.description;
-
-    const preview =
-      req.body?.preview === undefined ? existing.preview : Boolean(req.body.preview);
-    const download =
-      req.body?.download === undefined ? existing.download : Boolean(req.body.download);
-
-    let markdown;
-    if (typeof req.body?.markdown === 'string') {
-      markdown = req.body.markdown;
-    } else {
-      markdown = await readMarkdown(currentSlug);
-    }
-
-    if (nextSlug !== currentSlug) {
-      await writeMarkdown(nextSlug, markdown);
-      await deleteMarkdown(currentSlug);
-    } else {
-      await writeMarkdown(currentSlug, markdown);
-    }
-
-    const updated = buildResourceEntry({
-      id: existing.id === currentSlug ? nextSlug : existing.id,
-      slug: nextSlug,
-      title,
-      description,
-      preview,
-      download,
+    writeAudit({
+      userId: req.user.id,
+      action: 'users.provisioned',
+      resourceType: 'user',
+      resourceId: id,
     });
+    res.status(201).json({ user: toPublicUser(getUserById(id)) });
+  },
+);
 
-    resources[index] = updated;
-    await writeResources(resources);
+router.get(
+  '/certifications',
+  requirePermission('training.certification.read', 'training.admin'),
+  (req, res) => {
+    if (req.query.userId) {
+      return res.json({ certifications: listUserCertifications(req.query.userId) });
+    }
+    const rows = getDb()
+      .prepare(
+        `SELECT c.*, u.email, u.name, co.title AS course_title
+         FROM certifications c
+         JOIN users u ON u.id = c.user_id
+         JOIN courses co ON co.id = c.course_id
+         ORDER BY c.updated_at DESC LIMIT 200`,
+      )
+      .all();
+    res.json({ certifications: rows });
+  },
+);
 
-    return res.json({ ...toPublicResource(updated), markdown });
-  } catch (error) {
-    console.error(error);
-    const status = error.status || 500;
-    return res.status(status).json({ error: error.message || 'Failed to update document' });
-  }
+router.post(
+  '/certifications/:id/revoke',
+  requirePermission('training.certification.revoke', 'training.admin'),
+  (req, res) => {
+    try {
+      const cert = revokeCertification(req.params.id, req.body?.reason, req.user.id);
+      res.json({ certification: cert });
+    } catch (err) {
+      res.status(err.status || 500).json({ error: err.message });
+    }
+  },
+);
+
+router.get('/announcements', (_req, res) => {
+  res.json({
+    announcements: getDb()
+      .prepare('SELECT * FROM announcements ORDER BY created_at DESC')
+      .all(),
+  });
 });
 
-router.delete('/documents/:slug', async (req, res) => {
-  try {
-    const slug = sanitizeSlug(req.params.slug);
-    if (!slug) {
-      return res.status(400).json({ error: 'Invalid slug' });
-    }
-
-    const resources = await readResources();
-    const next = resources.filter((item) => item.slug !== slug);
-    if (next.length === resources.length) {
-      return res.status(404).json({ error: 'Document not found' });
-    }
-
-    await deleteMarkdown(slug);
-    await writeResources(next);
-    return res.json({ ok: true });
-  } catch (error) {
-    console.error(error);
-    const status = error.status || 500;
-    return res.status(status).json({ error: error.message || 'Failed to delete document' });
-  }
+router.post('/announcements', (req, res) => {
+  const { title, bodyMd, importance = 'NORMAL', status = 'PUBLISHED' } = req.body || {};
+  if (!title) return res.status(400).json({ error: 'title is required' });
+  const id = uid('ann');
+  const ts = nowIso();
+  getDb()
+    .prepare(
+      `INSERT INTO announcements (id, title, body_md, importance, status, published_at, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .run(id, title, bodyMd || '', importance, status, status === 'PUBLISHED' ? ts : null, ts);
+  res.status(201).json({ id });
 });
 
 export default router;
