@@ -351,17 +351,17 @@ main {
   color: var(--muted);
 }
 
-.support-grid {
+.training-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 17.5rem), 1fr));
   gap: 1rem;
 }
 
-.support-grid--featured {
+.training-grid--featured {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 18.5rem), 1fr));
 }
 
-.support-card {
+.training-card {
   --card-accent: var(--accent);
   display: flex;
   flex-direction: column;
@@ -397,7 +397,7 @@ main {
   }
 }
 
-.support-card--link:hover {
+.training-card--link:hover {
   transform: translateY(-3px);
   border-color: rgba(253, 3, 220, 0.35);
   box-shadow:
@@ -406,45 +406,45 @@ main {
   color: inherit;
 }
 
-.support-card--link:focus-visible {
+.training-card--link:focus-visible {
   outline: 3px solid var(--focus-ring);
   outline-offset: 3px;
 }
 
-.support-card--featured {
+.training-card--featured {
   min-height: 13rem;
   background:
     linear-gradient(160deg, #ffffff 0%, #f5f0ff 55%, #fdf0fb 100%);
 }
 
-.support-card--trust {
+.training-card--trust {
   --card-accent: #fd03dc;
 }
 
-.support-card--start {
+.training-card--start {
   --card-accent: #8b5cf6;
 }
 
-.support-card--account {
+.training-card--account {
   --card-accent: #9b87f5;
 }
 
-.support-card--billing {
+.training-card--billing {
   --card-accent: #c102ab;
 }
 
-.support-card--faq {
+.training-card--faq {
   --card-accent: #6d28d9;
 }
 
-.support-card__top {
+.training-card__top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
 }
 
-.support-card__index {
+.training-card__index {
   font-family: var(--font-serif);
   font-size: 0.95rem;
   font-weight: 700;
@@ -453,7 +453,7 @@ main {
   opacity: 0.85;
 }
 
-.support-card__cta {
+.training-card__cta {
   font-size: 0.84rem;
   font-weight: 700;
   color: var(--card-accent);
@@ -462,13 +462,13 @@ main {
   transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
-.support-card--link:hover .support-card__cta,
-.support-card--link:focus-visible .support-card__cta {
+.training-card--link:hover .training-card__cta,
+.training-card--link:focus-visible .training-card__cta {
   opacity: 1;
   transform: translateX(0);
 }
 
-.support-card h2 {
+.training-card h2 {
   margin: 0;
   font-family: var(--font-serif);
   font-size: 1.35rem;
@@ -477,7 +477,7 @@ main {
   color: var(--ink);
 }
 
-.support-card p {
+.training-card p {
   margin: 0;
   color: var(--muted);
   flex: 1;
@@ -485,7 +485,7 @@ main {
   font-size: 0.98rem;
 }
 
-.support-card__actions {
+.training-card__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.65rem;
@@ -579,7 +579,7 @@ main {
     align-items: flex-start;
   }
 
-  .support-card__cta {
+  .training-card__cta {
     opacity: 1;
     transform: none;
   }

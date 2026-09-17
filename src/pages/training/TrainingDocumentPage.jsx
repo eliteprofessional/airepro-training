@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import MarkdownRenderer from '../../components/support/MarkdownRenderer';
-import { fetchSupportResources, resolveApiUrl } from '../../lib/api';
+import MarkdownRenderer from '../../components/training/MarkdownRenderer';
+import { fetchTrainingResources, resolveApiUrl } from '../../lib/api';
 import { estimateReadingMinutes, extractToc } from '../../lib/markdownToc';
 
-function SupportDocumentPage() {
+function TrainingDocumentPage() {
   const { slug } = useParams();
   const [resource, setResource] = useState(null);
   const [markdown, setMarkdown] = useState('');
@@ -31,13 +31,13 @@ function SupportDocumentPage() {
       setActiveHeading('');
 
       try {
-        const catalog = await fetchSupportResources();
+        const catalog = await fetchTrainingResources();
         const match = catalog.find((item) => item.slug === slug) ?? null;
 
         if (!match || !match.preview) {
           if (!cancelled) {
             setStatus('not-found');
-            document.title = 'Document Not Found — Airepro Support';
+            document.title = 'Document Not Found — Airepro Training';
           }
           return;
         }
@@ -45,7 +45,7 @@ function SupportDocumentPage() {
         const response = await fetch(resolveApiUrl(match.file));
         if (!response.ok) {
           throw new Error(
-            'Unable to load this support document. Please try again later.',
+            'Unable to load this training document. Please try again later.',
           );
         }
         const text = await response.text();
@@ -54,16 +54,16 @@ function SupportDocumentPage() {
           setResource(match);
           setMarkdown(text);
           setStatus('ready');
-          document.title = `${match.title} — Airepro Support`;
+          document.title = `${match.title} — Airepro Training`;
         }
       } catch (err) {
         if (!cancelled) {
           setStatus('error');
           setError(
             err.message ||
-              'Unable to load this support document. Please try again later.',
+              'Unable to load this training document. Please try again later.',
           );
-          document.title = 'Document Error — Airepro Support';
+          document.title = 'Document Error — Airepro Training';
         }
       }
     }
@@ -114,8 +114,8 @@ function SupportDocumentPage() {
         </div>
         <div className="doc-chrome">
           <div className="doc-chrome__inner">
-            <Link className="doc-back" to="/support">
-              <span aria-hidden="true">←</span> Back to Support
+            <Link className="doc-back" to="/training">
+              <span aria-hidden="true">←</span> Back to Training
             </Link>
           </div>
         </div>
@@ -146,11 +146,11 @@ function SupportDocumentPage() {
       <div className="doc-page">
         <div className="doc-layout">
           <div className="doc-paper doc-paper--narrow not-found">
-            <p className="doc-kicker">Support</p>
+            <p className="doc-kicker">Training</p>
             <h1>Document Not Found</h1>
-            <p>The support document you&apos;re looking for doesn&apos;t exist.</p>
-            <Link className="button button--primary" to="/support">
-              Back to Support
+            <p>The training document you&apos;re looking for doesn&apos;t exist.</p>
+            <Link className="button button--primary" to="/training">
+              Back to Training
             </Link>
           </div>
         </div>
@@ -163,8 +163,8 @@ function SupportDocumentPage() {
       <div className="doc-page">
         <div className="doc-chrome">
           <div className="doc-chrome__inner">
-            <Link className="doc-back" to="/support">
-              <span aria-hidden="true">←</span> Back to Support
+            <Link className="doc-back" to="/training">
+              <span aria-hidden="true">←</span> Back to Training
             </Link>
           </div>
         </div>
@@ -179,12 +179,8 @@ function SupportDocumentPage() {
     );
   }
 
-  const isProfileVerification = resource?.slug === 'profile-verification';
-
   return (
-    <div
-      className={`doc-page${isProfileVerification ? ' doc-page--verification' : ''}`}
-    >
+    <div className="doc-page">
       <div
         className="doc-progress"
         role="progressbar"
@@ -199,7 +195,7 @@ function SupportDocumentPage() {
       <div className="doc-chrome">
         <div className="doc-chrome__inner">
           <nav className="doc-breadcrumb" aria-label="Breadcrumb">
-            <Link to="/support">Support</Link>
+            <Link to="/training">Training</Link>
             <span className="doc-breadcrumb__sep" aria-hidden="true">
               /
             </span>
@@ -229,9 +225,7 @@ function SupportDocumentPage() {
 
         <div className="doc-main">
           <header className="doc-hero">
-            <p className="doc-kicker">
-              {isProfileVerification ? 'Trust & verification' : 'Support guide'}
-            </p>
+            <p className="doc-kicker">Training guide</p>
             <h1>{resource.title}</h1>
             {resource.description && (
               <p className="doc-hero__lede">{resource.description}</p>
@@ -239,7 +233,7 @@ function SupportDocumentPage() {
             <div className="doc-meta">
               <span>{readingMinutes} min read</span>
               <span className="doc-meta__dot" aria-hidden="true" />
-              <span>Updated for Airepro Hire</span>
+              <span>Backend team</span>
             </div>
           </header>
 
@@ -248,8 +242,8 @@ function SupportDocumentPage() {
           </article>
 
           <footer className="doc-footer">
-            <Link className="doc-back" to="/support">
-              <span aria-hidden="true">←</span> All support documents
+            <Link className="doc-back" to="/training">
+              <span aria-hidden="true">←</span> All training guides
             </Link>
           </footer>
         </div>
@@ -258,4 +252,4 @@ function SupportDocumentPage() {
   );
 }
 
-export default SupportDocumentPage;
+export default TrainingDocumentPage;

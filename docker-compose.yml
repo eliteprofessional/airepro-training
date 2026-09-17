@@ -1,22 +1,22 @@
 services:
-  support-backend:
+  training-backend:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    image: airepro-support-backend:latest
-    container_name: airepro-support-backend
+    image: airepro-training-backend:latest
+    container_name: airepro-training-backend
     ports:
-      - "${BACKEND_PORT:-1410}:8787"
+      - "${BACKEND_PORT:-1411}:8787"
     environment:
       NODE_ENV: production
       PORT: 8787
       HOST: 0.0.0.0
       SERVE_FRONTEND: "false"
-      CORS_ORIGIN: ${CORS_ORIGIN:-https://support.airepro.in}
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://training.airepro.in}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-change-me}
       ADMIN_TOKEN_SECRET: ${ADMIN_TOKEN_SECRET:-change-me-to-a-long-random-string}
     volumes:
-      - support-content:/app/public/support
+      - training-content:/app/public/training
     restart: unless-stopped
     healthcheck:
       test:
@@ -31,18 +31,18 @@ services:
       retries: 3
       start_period: 15s
 
-  support-frontend:
+  training-frontend:
     build:
       context: .
       dockerfile: Dockerfile.frontend
       args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-https://support-s.airepro.in}
-    image: airepro-support-frontend:latest
-    container_name: airepro-support-frontend
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-https://training-s.airepro.in}
+    image: airepro-training-frontend:latest
+    container_name: airepro-training-frontend
     ports:
-      - "${FRONTEND_PORT:-409}:80"
+      - "${FRONTEND_PORT:-410}:80"
     depends_on:
-      support-backend:
+      training-backend:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
@@ -53,4 +53,4 @@ services:
       start_period: 10s
 
 volumes:
-  support-content:
+  training-content:

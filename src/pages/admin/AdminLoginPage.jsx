@@ -14,7 +14,7 @@ function AdminLoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    document.title = 'Admin Login — Airepro Support';
+    document.title = 'Admin Login — Airepro Training';
   }, []);
 
   if (getAdminToken()) {
@@ -41,8 +41,8 @@ function AdminLoginPage() {
     <div className="page admin-page">
       <header className="page-hero">
         <p className="page-hero__eyebrow">Admin</p>
-        <h1>Support portal login</h1>
-        <p>Sign in with the shared admin password to manage documentation.</p>
+        <h1>Training portal login</h1>
+        <p>Sign in with the shared admin password to manage training guides.</p>
       </header>
 
       <form className="admin-card admin-form" onSubmit={handleSubmit}>
@@ -65,8 +65,8 @@ function AdminLoginPage() {
           <button className="button button--primary" type="submit" disabled={submitting}>
             {submitting ? 'Signing in…' : 'Sign in'}
           </button>
-          <Link className="button button--ghost" to="/support">
-            Back to Support
+          <Link className="button button--ghost" to="/training">
+            Back to Training
           </Link>
         </div>
       </form>

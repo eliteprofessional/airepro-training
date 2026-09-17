@@ -1,4 +1,4 @@
-const TOKEN_KEY = 'airepro_support_admin_token';
+const TOKEN_KEY = 'airepro_training_admin_token';
 
 const API_BASE = String(import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 
@@ -64,8 +64,8 @@ async function request(path, options = {}) {
   return data;
 }
 
-export function fetchSupportResources() {
-  return request('/api/support/resources');
+export function fetchTrainingResources() {
+  return request('/api/training/resources');
 }
 
 export function adminLogin(password) {

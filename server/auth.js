@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 
 const TOKEN_TTL = '12h';
-const COOKIE_NAME = 'airepro_support_admin';
+const COOKIE_NAME = 'airepro_training_admin';
 
 function getSecret() {
   const secret = process.env.ADMIN_TOKEN_SECRET;

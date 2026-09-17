@@ -1,27 +1,26 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import SupportCard from '../../components/support/SupportCard';
-import { fetchSupportResources } from '../../lib/api';
+import TrainingCard from '../../components/training/TrainingCard';
+import { fetchTrainingResources } from '../../lib/api';
 
-const FEATURED_SLUGS = new Set(['profile-verification', 'idv-hire', 'getting-started']);
+const FEATURED_SLUGS = new Set(['overview', 'idv-backend-ops', 'obo-ops']);
 
 const GUIDE_META = {
-  'getting-started': { index: '01', tone: 'start' },
-  'account-management': { index: '02', tone: 'account' },
-  'profile-verification': { index: '03', tone: 'trust' },
-  'idv-hire': { index: '04', tone: 'trust' },
-  'subscription-guide': { index: '05', tone: 'billing' },
-  faq: { index: '06', tone: 'faq' },
+  overview: { index: '01', tone: 'start' },
+  'idv-backend-ops': { index: '02', tone: 'trust' },
+  'obo-ops': { index: '03', tone: 'account' },
+  'trust-and-safety': { index: '04', tone: 'billing' },
+  troubleshooting: { index: '05', tone: 'faq' },
 };
 
-function SupportPage() {
+function TrainingPage() {
   const [resources, setResources] = useState([]);
   const [status, setStatus] = useState('loading');
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
 
   useEffect(() => {
-    document.title = 'Airepro Support — Documentation & Help Center';
+    document.title = 'Airepro Training — IDV, OBO & Trust & Safety';
 
     let cancelled = false;
 
@@ -29,7 +28,7 @@ function SupportPage() {
       setStatus('loading');
       setError('');
       try {
-        const data = await fetchSupportResources();
+        const data = await fetchTrainingResources();
         if (!cancelled) {
           setResources(Array.isArray(data) ? data : []);
           setStatus('ready');
@@ -37,7 +36,7 @@ function SupportPage() {
       } catch (err) {
         if (!cancelled) {
           setStatus('error');
-          setError(err.message || 'Failed to load support documents.');
+          setError(err.message || 'Failed to load training guides.');
         }
       }
     }
@@ -72,11 +71,11 @@ function SupportPage() {
       <section className="home-hero" aria-labelledby="home-hero-title">
         <div className="home-hero__glow" aria-hidden="true" />
         <div className="home-hero__inner">
-          <p className="home-hero__brand">Airepro Support</p>
-          <h1 id="home-hero-title">Documentation &amp; Help Center</h1>
+          <p className="home-hero__brand">Airepro Training</p>
+          <h1 id="home-hero-title">Backend operations guides</h1>
           <p className="home-hero__lede">
-            Clear guides for Hire — from first login to verification, billing,
-            and day-to-day account help.
+            Internal playbooks for Hire IDV, OBO console workflows, and Trust &amp;
+            Safety — systems, ownership, and where to look when things break.
           </p>
 
           <form
@@ -84,11 +83,11 @@ function SupportPage() {
             role="search"
             onSubmit={(event) => event.preventDefault()}
           >
-            <label className="visually-hidden" htmlFor="support-search">
-              Search support guides
+            <label className="visually-hidden" htmlFor="training-search">
+              Search training guides
             </label>
             <input
-              id="support-search"
+              id="training-search"
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -106,12 +105,12 @@ function SupportPage() {
               <span>guides</span>
             </div>
             <div>
-              <strong>Hire</strong>
-              <span>focused</span>
+              <strong>IDV</strong>
+              <span>ops</span>
             </div>
             <div>
-              <strong>IDV</strong>
-              <span>covered</span>
+              <strong>OBO</strong>
+              <span>+ TNS</span>
             </div>
           </div>
         </div>
@@ -150,11 +149,11 @@ function SupportPage() {
           <section className="home-section" aria-labelledby="featured-heading">
             <div className="home-section__head">
               <h2 id="featured-heading">Start here</h2>
-              <p>The essentials most people need first on Hire.</p>
+              <p>Orientation and the two core ops surfaces.</p>
             </div>
-            <div className="support-grid support-grid--featured">
+            <div className="training-grid training-grid--featured">
               {featured.map((resource, index) => (
-                <SupportCard
+                <TrainingCard
                   key={resource.id || resource.slug}
                   resource={resource}
                   meta={GUIDE_META[resource.slug]}
@@ -175,12 +174,12 @@ function SupportPage() {
               <p>
                 {query.trim()
                   ? `${rest.length} result${rest.length === 1 ? '' : 's'}`
-                  : 'Account, billing, and answers to common questions.'}
+                  : 'Trust & Safety ownership and troubleshooting.'}
               </p>
             </div>
-            <div className="support-grid">
+            <div className="training-grid">
               {rest.map((resource, index) => (
-                <SupportCard
+                <TrainingCard
                   key={resource.id || resource.slug}
                   resource={resource}
                   meta={GUIDE_META[resource.slug]}
@@ -191,17 +190,17 @@ function SupportPage() {
           </section>
         )}
 
-        <aside className="home-aside" aria-label="Need more help">
+        <aside className="home-aside" aria-label="Deep dive">
           <div>
-            <p className="home-aside__eyebrow">Still stuck?</p>
-            <h2>Open Identity Verification in Hire</h2>
+            <p className="home-aside__eyebrow">Need the full IDV runbook?</p>
+            <h2>Hire IDV &amp; Meet liveness</h2>
             <p>
-              For live ID checks and document upload, continue in product under
-              Settings → Identity Verification.
+              Bookings, webhooks, IDV session links, env vars, and smoke tests for
+              backend engineers.
             </p>
           </div>
-          <Link className="button button--primary" to="/support/idv-hire">
-            Read the IDV guide
+          <Link className="button button--primary" to="/training/idv-backend-ops">
+            Open IDV backend ops
           </Link>
         </aside>
       </div>
@@ -209,4 +208,4 @@ function SupportPage() {
   );
 }
 
-export default SupportPage;
+export default TrainingPage;

@@ -1,8 +1,8 @@
-# Frontend SPA (support.airepro.in)
+# Frontend SPA (training.airepro.in)
 FROM node:22-alpine AS build
 WORKDIR /app
 
-ARG VITE_API_BASE_URL=https://support-s.airepro.in
+ARG VITE_API_BASE_URL=https://training-s.airepro.in
 
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -11,13 +11,13 @@ COPY index.html vite.config.js ./
 COPY public ./public
 COPY src ./src
 
-# Markdown/catalog belong on the API host only. If they ship in dist/support/,
-# nginx treats /support as a static directory (301 → 403) instead of the SPA route.
-RUN rm -rf public/support
+# Markdown/catalog belong on the API host only. If they ship in dist/training/,
+# nginx treats /training as a static directory (301 → 403) instead of the SPA route.
+RUN rm -rf public/training
 
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN npm run build \
-  && test ! -d dist/support \
+  && test ! -d dist/training \
   && test -f dist/index.html
 
 FROM nginx:stable-alpine AS production

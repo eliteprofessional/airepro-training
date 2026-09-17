@@ -4,8 +4,8 @@ import fs from 'node:fs/promises';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const ROOT_DIR = path.resolve(__dirname, '..');
-export const SUPPORT_DIR = path.join(ROOT_DIR, 'public', 'support');
-export const RESOURCES_PATH = path.join(SUPPORT_DIR, 'resources.json');
+export const TRAINING_DIR = path.join(ROOT_DIR, 'public', 'training');
+export const RESOURCES_PATH = path.join(TRAINING_DIR, 'resources.json');
 
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -21,8 +21,8 @@ export function resolveMarkdownPath(slug) {
   const safe = sanitizeSlug(slug);
   if (!safe) return null;
 
-  const resolved = path.resolve(SUPPORT_DIR, `${safe}.md`);
-  const relative = path.relative(SUPPORT_DIR, resolved);
+  const resolved = path.resolve(TRAINING_DIR, `${safe}.md`);
+  const relative = path.relative(TRAINING_DIR, resolved);
   if (relative.startsWith('..') || path.isAbsolute(relative)) {
     return null;
   }
@@ -30,7 +30,7 @@ export function resolveMarkdownPath(slug) {
 }
 
 export function fileUrlForSlug(slug) {
-  return `/support/${slug}.md`;
+  return `/training/${slug}.md`;
 }
 
 async function writeAtomic(filePath, contents) {

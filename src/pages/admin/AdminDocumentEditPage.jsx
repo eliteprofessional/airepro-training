@@ -75,7 +75,7 @@ function AdminDocumentEditPage() {
         </div>
         <div className="admin-header__actions">
           {doc && (
-            <Link className="button button--ghost" to={`/support/${doc.slug}`}>
+            <Link className="button button--ghost" to={`/training/${doc.slug}`}>
               Preview
             </Link>
           )}

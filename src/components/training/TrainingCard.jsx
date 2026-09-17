@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 
-function SupportCard({ resource, meta, featured = false, style }) {
+function TrainingCard({ resource, meta, featured = false, style }) {
   const { title, description, slug, preview } = resource;
   const showPreview = Boolean(preview);
   const indexLabel = meta?.index || '••';
@@ -9,11 +9,11 @@ function SupportCard({ resource, meta, featured = false, style }) {
   if (!showPreview) {
     return (
       <article
-        className={`support-card support-card--static support-card--${tone}`}
+        className={`training-card training-card--static training-card--${tone}`}
         style={style}
       >
-        <div className="support-card__top">
-          <span className="support-card__index" aria-hidden="true">
+        <div className="training-card__top">
+          <span className="training-card__index" aria-hidden="true">
             {indexLabel}
           </span>
         </div>
@@ -25,15 +25,15 @@ function SupportCard({ resource, meta, featured = false, style }) {
 
   return (
     <Link
-      className={`support-card support-card--link${featured ? ' support-card--featured' : ''} support-card--${tone}`}
-      to={`/support/${slug}`}
+      className={`training-card training-card--link${featured ? ' training-card--featured' : ''} training-card--${tone}`}
+      to={`/training/${slug}`}
       style={style}
     >
-      <div className="support-card__top">
-        <span className="support-card__index" aria-hidden="true">
+      <div className="training-card__top">
+        <span className="training-card__index" aria-hidden="true">
           {indexLabel}
         </span>
-        <span className="support-card__cta">
+        <span className="training-card__cta">
           Open
           <span aria-hidden="true"> →</span>
         </span>
@@ -44,4 +44,4 @@ function SupportCard({ resource, meta, featured = false, style }) {
   );
 }
 
-export default SupportCard;
+export default TrainingCard;

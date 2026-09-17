@@ -5,10 +5,10 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 
-import supportRoutes from './routes/support.js';
+import trainingRoutes from './routes/training.js';
 import adminRoutes from './routes/admin.js';
 import { createCorsOptions } from './cors.js';
-import { ROOT_DIR, SUPPORT_DIR } from './resources.js';
+import { ROOT_DIR, TRAINING_DIR } from './resources.js';
 
 dotenv.config({ path: path.join(ROOT_DIR, '.env') });
 
@@ -27,14 +27,14 @@ app.use(cookieParser());
 app.get('/api/health', (_req, res) => {
   res.json({
     ok: true,
-    service: 'airepro-support-api',
+    service: 'airepro-training-api',
   });
 });
 
-app.use('/api/support', supportRoutes);
+app.use('/api/training', trainingRoutes);
 app.use('/api/admin', adminRoutes);
 
-app.use('/support', express.static(SUPPORT_DIR, { fallthrough: true }));
+app.use('/training', express.static(TRAINING_DIR, { fallthrough: true }));
 
 if (isProduction && serveFrontend) {
   app.use(express.static(DIST_DIR));
@@ -55,7 +55,7 @@ app.use((err, _req, res, _next) => {
 
 const server = app.listen(PORT, process.env.HOST || '0.0.0.0', () => {
   const host = process.env.HOST || '0.0.0.0';
-  console.log(`airepro-support API listening on http://${host}:${PORT}`);
+  console.log(`airepro-training API listening on http://${host}:${PORT}`);
   if (!process.env.ADMIN_PASSWORD || !process.env.ADMIN_TOKEN_SECRET) {
     console.warn(
       'Warning: set ADMIN_PASSWORD and ADMIN_TOKEN_SECRET in .env for admin login.',

@@ -85,7 +85,7 @@ function DocumentForm({
             setSlug(event.target.value);
           }}
         />
-        <small>Used in URLs: /support/your-slug</small>
+        <small>Used in URLs: /training/your-slug</small>
       </label>
 
       <label className="admin-field">

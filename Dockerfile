@@ -29,12 +29,12 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY server ./server
 COPY public ./public
 COPY docker/entrypoint.sh /app/docker/entrypoint.sh
-COPY public/support /app/docker/support-seed
+COPY public/training /app/docker/training-seed
 COPY --from=build /app/dist ./dist
 
 RUN chmod +x /app/docker/entrypoint.sh \
   && addgroup -S airepro && adduser -S airepro -G airepro \
-  && chown -R airepro:airepro /app/public/support /app/docker
+  && chown -R airepro:airepro /app/public/training /app/docker
 
 USER airepro
 

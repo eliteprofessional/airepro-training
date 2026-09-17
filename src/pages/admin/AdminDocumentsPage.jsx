@@ -33,7 +33,7 @@ function AdminDocumentsPage() {
   }
 
   useEffect(() => {
-    document.title = 'Admin — Support Documents';
+    document.title = 'Admin — Training Documents';
     load();
   }, []);
 
@@ -73,13 +73,13 @@ function AdminDocumentsPage() {
       <header className="admin-header">
         <div>
           <p className="page-hero__eyebrow">Admin</p>
-          <h1>Support documents</h1>
+          <h1>Training documents</h1>
         </div>
         <div className="admin-header__actions">
           <Link className="button button--primary" to="/admin/documents/new">
             New document
           </Link>
-          <Link className="button button--ghost" to="/support">
+          <Link className="button button--ghost" to="/training">
             View portal
           </Link>
           <button className="button button--ghost" type="button" onClick={handleLogout}>

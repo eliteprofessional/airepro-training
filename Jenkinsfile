@@ -1,15 +1,15 @@
 /*
- * Airepro Support — Jenkins Pipeline (split Docker FE/BE)
+ * Airepro Training — Jenkins Pipeline (split Docker FE/BE)
  *
  * Domains / ports (override via Jenkins job env):
- * - Frontend SPA: https://support.airepro.in  → 127.0.0.1:409
- * - Backend API:  https://support-s.airepro.in → 127.0.0.1:1410
+ * - Frontend SPA: https://training.airepro.in  → 127.0.0.1:410
+ * - Backend API:  https://training-s.airepro.in → 127.0.0.1:1411
  *
  * Prerequisites:
  * - Docker on the agent. If jenkins is not in the `docker` group, set DOCKER='sudo docker'.
- * - Admin secrets via Jenkins env or ~/.secrets/airepro-support.env:
+ * - Admin secrets via Jenkins env or ~/.secrets/airepro-training.env:
  *     ADMIN_PASSWORD, ADMIN_TOKEN_SECRET
- * - Reverse proxy / Cloudflare Tunnel should target loopback 409 and 1410.
+ * - Reverse proxy / Cloudflare Tunnel should target loopback 410 and 1411.
  */
 
 pipeline {
@@ -22,17 +22,17 @@ pipeline {
 
     environment {
         DEPLOY_BRANCH       = "${env.DEPLOY_BRANCH ?: 'main'}"
-        FRONTEND_IMAGE      = "${env.FRONTEND_IMAGE ?: 'airepro-support-frontend'}"
-        BACKEND_IMAGE       = "${env.BACKEND_IMAGE ?: 'airepro-support-backend'}"
-        FRONTEND_CONTAINER  = "${env.FRONTEND_CONTAINER ?: 'airepro-support-frontend'}"
-        BACKEND_CONTAINER   = "${env.BACKEND_CONTAINER ?: 'airepro-support-backend'}"
-        FRONTEND_PORT       = "${env.FRONTEND_PORT ?: '409'}"
-        BACKEND_PORT        = "${env.BACKEND_PORT ?: '1410'}"
-        DOMAIN              = "${env.DOMAIN ?: 'support.airepro.in'}"
-        BACKEND_DOMAIN      = "${env.BACKEND_DOMAIN ?: 'support-s.airepro.in'}"
-        VITE_API_BASE_URL   = "${env.VITE_API_BASE_URL ?: 'https://support-s.airepro.in'}"
-        CORS_ORIGIN         = "${env.CORS_ORIGIN ?: 'https://support.airepro.in'}"
-        SUPPORT_VOLUME      = "${env.SUPPORT_VOLUME ?: 'airepro-support-content'}"
+        FRONTEND_IMAGE      = "${env.FRONTEND_IMAGE ?: 'airepro-training-frontend'}"
+        BACKEND_IMAGE       = "${env.BACKEND_IMAGE ?: 'airepro-training-backend'}"
+        FRONTEND_CONTAINER  = "${env.FRONTEND_CONTAINER ?: 'airepro-training-frontend'}"
+        BACKEND_CONTAINER   = "${env.BACKEND_CONTAINER ?: 'airepro-training-backend'}"
+        FRONTEND_PORT       = "${env.FRONTEND_PORT ?: '410'}"
+        BACKEND_PORT        = "${env.BACKEND_PORT ?: '1411'}"
+        DOMAIN              = "${env.DOMAIN ?: 'training.airepro.in'}"
+        BACKEND_DOMAIN      = "${env.BACKEND_DOMAIN ?: 'training-s.airepro.in'}"
+        VITE_API_BASE_URL   = "${env.VITE_API_BASE_URL ?: 'https://training-s.airepro.in'}"
+        CORS_ORIGIN         = "${env.CORS_ORIGIN ?: 'https://training.airepro.in'}"
+        TRAINING_VOLUME     = "${env.TRAINING_VOLUME ?: 'airepro-training-content'}"
         DOCKER              = "${env.DOCKER ?: 'docker'}"
         JENKINS_NODE_COOKIE = 'dontKillMe'
         BUILD_ID            = 'dontKillMe'
@@ -82,8 +82,8 @@ pipeline {
             steps {
                 sh '''
                 set -e
-                SECRETS_FILE="${HOME}/.secrets/airepro-support.env"
-                ${DOCKER} volume create "${SUPPORT_VOLUME}" >/dev/null 2>&1 || true
+                SECRETS_FILE="${HOME}/.secrets/airepro-training.env"
+                ${DOCKER} volume create "${TRAINING_VOLUME}" >/dev/null 2>&1 || true
                 ${DOCKER} rm -f "${BACKEND_CONTAINER}" >/dev/null 2>&1 || true
 
                 if [ -f "${SECRETS_FILE}" ]; then
@@ -98,7 +98,7 @@ pipeline {
                     -e SERVE_FRONTEND=false \
                     -e CORS_ORIGIN="${CORS_ORIGIN}" \
                     --env-file "${SECRETS_FILE}" \
-                    -v "${SUPPORT_VOLUME}:/app/public/support" \
+                    -v "${TRAINING_VOLUME}:/app/public/training" \
                     "${BACKEND_IMAGE}:${BUILD_NUMBER}"
                 else
                   if [ -z "${ADMIN_PASSWORD}" ] || [ -z "${ADMIN_TOKEN_SECRET}" ]; then
@@ -117,7 +117,7 @@ pipeline {
                     -e CORS_ORIGIN="${CORS_ORIGIN}" \
                     -e "ADMIN_PASSWORD=${ADMIN_PASSWORD}" \
                     -e "ADMIN_TOKEN_SECRET=${ADMIN_TOKEN_SECRET}" \
-                    -v "${SUPPORT_VOLUME}:/app/public/support" \
+                    -v "${TRAINING_VOLUME}:/app/public/training" \
                     "${BACKEND_IMAGE}:${BUILD_NUMBER}"
                 fi
                 '''
@@ -166,16 +166,16 @@ pipeline {
                 done
                 curl -fsS -o /dev/null -w "frontend Host %{http_code}\\n" \
                   -H "Host: ${DOMAIN}" "http://127.0.0.1:${FRONTEND_PORT}/"
-                code_support=$(curl -sS -o /dev/null -w "%{http_code}" \
-                  -H "Host: ${DOMAIN}" "http://127.0.0.1:${FRONTEND_PORT}/support")
-                echo "frontend /support ${code_support}"
-                [ "${code_support}" = "200" ] || {
-                  echo "ERROR: expected /support to return 200, got ${code_support}"
+                code_training=$(curl -sS -o /dev/null -w "%{http_code}" \
+                  -H "Host: ${DOMAIN}" "http://127.0.0.1:${FRONTEND_PORT}/training")
+                echo "frontend /training ${code_training}"
+                [ "${code_training}" = "200" ] || {
+                  echo "ERROR: expected /training to return 200, got ${code_training}"
                   ${DOCKER} logs --tail 40 "${FRONTEND_CONTAINER}" || true
                   exit 1
                 }
                 curl -fsS -o /dev/null -w "backend resources %{http_code}\\n" \
-                  -H "Host: ${BACKEND_DOMAIN}" "http://127.0.0.1:${BACKEND_PORT}/api/support/resources"
+                  -H "Host: ${BACKEND_DOMAIN}" "http://127.0.0.1:${BACKEND_PORT}/api/training/resources"
                 '''
             }
         }

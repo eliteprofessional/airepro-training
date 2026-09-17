@@ -1,14 +1,14 @@
-# Airepro Support
+# Airepro Training
 
-Standalone React + Vite documentation portal for Airepro (AD-1471), with a co-located Express admin API for CRUD on support markdown.
+Standalone React + Vite documentation portal for **backend-team training** on Hire **IDV**, **OBO**, and **Trust & Safety** operations. Co-located Express admin API for CRUD on training markdown.
 
-Independent of `hireFrontend` and other monorepo frontends. UI theme matches [stage.airepro.in](https://stage.airepro.in/) (magenta/violet accents, Inter/Poppins, Airepro logo).
+Independent of `hireFrontend` and end-user [Airepro Support](https://support.airepro.in/). Deployed separately at **https://training.airepro.in**.
 
 ## Stack
 
 - React 19 + Vite (JSX)
 - `react-router-dom`, `react-markdown`, `remark-gfm`, `rehype-sanitize`
-- Express API reading/writing `public/support/*.md` + `public/support/resources.json`
+- Express API reading/writing `public/training/*.md` + `public/training/resources.json`
 - Shared `ADMIN_PASSWORD` → JWT (Bearer + httpOnly cookie)
 
 ## Quick start
@@ -16,11 +16,12 @@ Independent of `hireFrontend` and other monorepo frontends. UI theme matches [st
 ```bash
 cp .env.example .env
 # set ADMIN_PASSWORD and ADMIN_TOKEN_SECRET (and other REPLACE_ME values)
+# for local: leave VITE_API_BASE_URL empty so Vite serves /api via proxy
 npm install
 npm run dev
 ```
 
-- Public app (Vite): http://127.0.0.1:5174/support  
+- Public app (Vite): http://127.0.0.1:5174/training  
 - API (Express): http://127.0.0.1:8787/api/…  
 - Admin: http://127.0.0.1:5174/admin/login  
 
@@ -34,7 +35,7 @@ Vite listens on **5174** (avoids clashing with Hire on 5173) and proxies `/api` 
 | `npm run dev:web` | Vite only |
 | `npm run dev:server` | Express API only |
 | `npm run build` | Production frontend build → `dist/` |
-| `npm start` | Serve `dist/` + API + writable support files (set `NODE_ENV=production`) |
+| `npm start` | Serve `dist/` + API + writable training files (set `NODE_ENV=production`) |
 | `npm run preview` | Vite static preview (no admin API) |
 
 Production (single Node process):
@@ -44,7 +45,7 @@ npm run build
 npm start
 ```
 
-Open http://localhost:8787/support (port from `PORT`).
+Open http://localhost:8787/training (port from `PORT`).
 
 ## Environment
 
@@ -52,41 +53,51 @@ See [`.env.example`](.env.example) — copy to `.env` and replace placeholders b
 
 | Variable | Description |
 | --- | --- |
-| `DOMAIN` | Public frontend hostname (`support.airepro.in`) |
-| `BACKEND_DOMAIN` | Public API hostname (`support-s.airepro.in`) |
-| `FRONTEND_PORT` | Host port for SPA container (default `409`) |
-| `BACKEND_PORT` | Host port for API container (default `1410`) — tunnel target for `support-s` |
-| `VITE_API_BASE_URL` | Public API origin baked into the SPA (`https://support-s.airepro.in`) |
-| `CORS_ORIGIN` | Allowed frontend origin(s) for API CORS (`https://support.airepro.in`) |
+| `DOMAIN` | Public frontend hostname (`training.airepro.in`) |
+| `BACKEND_DOMAIN` | Public API hostname (`training-s.airepro.in`) |
+| `FRONTEND_PORT` | Host port for SPA container (default `410`) |
+| `BACKEND_PORT` | Host port for API container (default `1411`) — tunnel target for `training-s` |
+| `VITE_API_BASE_URL` | Public API origin baked into the SPA (`https://training-s.airepro.in`) |
+| `CORS_ORIGIN` | Allowed frontend origin(s) for API CORS (`https://training.airepro.in`) |
 | `PORT` | Express listen port **inside** the container / local Node (default `8787`) |
 | `HOST` | Bind address (default `0.0.0.0`) |
 | `SERVE_FRONTEND` | `true` only for combined single-container mode |
 | `ADMIN_PASSWORD` | Shared password for `/admin/login` |
 | `ADMIN_TOKEN_SECRET` | JWT signing secret |
 
-Do not commit `.env`. For Jenkins, copy `ADMIN_*` (and any overrides) to `/var/lib/jenkins/.secrets/airepro-support.env` on the agent.
+Do not commit `.env`. For Jenkins, copy `ADMIN_*` (and any overrides) to `/var/lib/jenkins/.secrets/airepro-training.env` on the agent.
 
 ## Changing content later
 
-Catalog + bodies live under `public/support/`. Prefer the **Admin UI** so files and `resources.json` stay in sync.
+Catalog + bodies live under `public/training/`. Prefer the **Admin UI** so files and `resources.json` stay in sync.
 
 ### Local / repo edits
 
 1. Open http://127.0.0.1:5174/admin/login (or production Admin URL).
-2. Create / edit / delete documents — each save writes `public/support/<slug>.md` and updates `resources.json`.
+2. Create / edit / delete documents — each save writes `public/training/<slug>.md` and updates `resources.json`.
 3. Or edit files by hand:
-   - Add `public/support/my-doc.md`
-   - Add a matching entry in `public/support/resources.json` (`id`, `slug`, `title`, `description`, `file`, `preview`)
+   - Add `public/training/my-doc.md`
+   - Add a matching entry in `public/training/resources.json` (`id`, `slug`, `title`, `description`, `file`, `preview`)
 4. Slugs must match `[a-z0-9-]+`.
 
 Commit and push markdown/catalog changes if you want them in the image seed; otherwise production edits persist on the Docker volume (below).
+
+### Seeded guides (v1)
+
+| Slug | Topic |
+| --- | --- |
+| `overview` | How IDV, OBO, and TNS relate |
+| `idv-backend-ops` | Hire IDV, Meet liveness, webhooks, smoke |
+| `obo-ops` | OBO console workflows and roles |
+| `trust-and-safety` | TNS modules and suspension authority |
+| `troubleshooting` | First-look failure checklist |
 
 ### Production (Docker / Jenkins)
 
 | What | Where |
 | --- | --- |
-| Live content | Docker volume `airepro-support-content` → `/app/public/support` |
-| Seed (first boot only) | Files baked into the backend image from `public/support/` |
+| Live content | Docker volume `airepro-training-content` → `/app/public/training` |
+| Seed (first boot only) | Files baked into the backend image from `public/training/` |
 
 On first start, if the volume has no `resources.json`, the entrypoint copies the image seed into the volume. **Later edits via Admin** update the volume only — they are not overwritten by redeploys.
 
@@ -94,26 +105,26 @@ To reset production content to the repo seed: remove/recreate the volume (destru
 
 ```bash
 # inspect live files on the agent (example)
-docker exec -it airepro-support-backend ls -la /app/public/support
+docker exec -it airepro-training-backend ls -la /app/public/training
 ```
 
 ## Content layout
 
 ```
-public/support/
+public/training/
   resources.json    # catalog (source of truth for cards + API)
   *.md              # document bodies (one file per slug)
 ```
 
-Public portal loads the catalog from `GET /api/support/resources`. Markdown is served by the **backend** at `/support/<slug>.md` (not from the SPA nginx image).
+Public portal loads the catalog from `GET /api/training/resources`. Markdown is served by the **backend** at `/training/<slug>.md` (not from the SPA nginx image).
 
 ## Public routes
 
 | Path | Page |
 | --- | --- |
-| `/` | Redirects to `/support` |
-| `/support` | Landing / catalog |
-| `/support/:slug` | Markdown preview |
+| `/` | Redirects to `/training` |
+| `/training` | Landing / catalog |
+| `/training/:slug` | Markdown preview |
 
 ## Admin routes
 
@@ -144,8 +155,8 @@ Production targets:
 
 | Service | Host | Host port | Container |
 | --- | --- | --- | --- |
-| Frontend | `support.airepro.in` | `409` | nginx SPA |
-| Backend | `support-s.airepro.in` | `1410` | Express API + markdown |
+| Frontend | `training.airepro.in` | `410` | nginx SPA |
+| Backend | `training-s.airepro.in` | `1411` | Express API + markdown |
 
 ```bash
 cp .env.example .env
@@ -153,20 +164,20 @@ cp .env.example .env
 docker compose up --build -d
 ```
 
-- Frontend: http://localhost:409/support  
-- Backend health: http://localhost:1410/api/health  
-- Admin UI: http://localhost:409/admin/login  
+- Frontend: http://localhost:410/training  
+- Backend health: http://localhost:1411/api/health  
+- Admin UI: http://localhost:410/admin/login  
 
 Point reverse proxies / Cloudflare Tunnel:
 
-- `support.airepro.in` → host port **409**
-- `support-s.airepro.in` → host port **1410**
+- `training.airepro.in` → host port **410**
+- `training-s.airepro.in` → host port **1411**
 
 Compose builds:
 
-- `Dockerfile.frontend` with `VITE_API_BASE_URL=https://support-s.airepro.in` (markdown folder is stripped from the SPA image so `/support` is not a static directory)
-- `Dockerfile.backend` with `CORS_ORIGIN=https://support.airepro.in`
-- Volume `support-content` / `airepro-support-content` persists admin-edited markdown/catalog
+- `Dockerfile.frontend` with `VITE_API_BASE_URL=https://training-s.airepro.in` (markdown folder is stripped from the SPA image so `/training` is not a static directory)
+- `Dockerfile.backend` with `CORS_ORIGIN=https://training.airepro.in`
+- Volume `training-content` / `airepro-training-content` persists admin-edited markdown/catalog
 
 ```bash
 docker compose logs -f
@@ -174,7 +185,7 @@ docker compose ps
 docker compose down
 ```
 
-Optional combined image (API serves SPA too): `docker build -f Dockerfile -t airepro-support:all-in-one .` with `SERVE_FRONTEND=true`.
+Optional combined image (API serves SPA too): `docker build -f Dockerfile -t airepro-training:all-in-one .` with `SERVE_FRONTEND=true`.
 
 ## Jenkins
 
@@ -182,15 +193,35 @@ Repo root [`Jenkinsfile`](Jenkinsfile) deploys both containers on the agent:
 
 | Service | Domain | Loopback port |
 | --- | --- | --- |
-| Frontend | `support.airepro.in` | `409` |
-| Backend | `support-s.airepro.in` | `1410` |
+| Frontend | `training.airepro.in` | `410` |
+| Backend | `training-s.airepro.in` | `1411` |
 
-Provide `ADMIN_PASSWORD` and `ADMIN_TOKEN_SECRET` as Jenkins job env, or place them in `~/.secrets/airepro-support.env` on the agent. If the Jenkins user cannot talk to Docker, set job env `DOCKER=sudo docker`.
+Provide `ADMIN_PASSWORD` and `ADMIN_TOKEN_SECRET` as Jenkins job env, or place them in `~/.secrets/airepro-training.env` on the agent. If the Jenkins user cannot talk to Docker, set job env `DOCKER=sudo docker`.
+
+Create a **new Jenkins job** (do not reuse the support job) pointed at this repository.
+
+## Separate GitHub repo (required before push)
+
+This folder still has its own `.git`. Until a dedicated remote exists, **do not push** to `eliteprofessional/airepro-support`.
+
+1. Create empty GitHub repo: `eliteprofessional/airepro-training`
+2. Retarget and push:
+
+```bash
+cd airepro-training
+git remote set-url origin git@github.com:eliteprofessional/airepro-training.git
+git remote -v
+# commit local training changes, then:
+git push -u origin main
+```
+
+3. Wire Cloudflare Tunnel / reverse proxy to ports **410** / **1411**
+4. Add Jenkins secrets file and run the pipeline
 
 ## Deploy notes
 
-Prefer **split** frontend/backend: SPA on `support.airepro.in:409`, API on `support-s.airepro.in:1410`. The SPA calls the API via `VITE_API_BASE_URL`; markdown files are served by the backend under `/support/*.md`.
+Prefer **split** frontend/backend: SPA on `training.airepro.in:410`, API on `training-s.airepro.in:1411`. The SPA calls the API via `VITE_API_BASE_URL`; markdown files are served by the backend under `/training/*.md`.
 
 ## Out of scope
 
-Search, categories, OAuth/SSO, databases, and any imports from `hireFrontend`.
+Search facets, categories, OAuth/SSO, databases, and any imports from `hireFrontend`. End-user Hire help remains on `support.airepro.in`.
