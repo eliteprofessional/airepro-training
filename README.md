@@ -38,6 +38,13 @@ npm run dev
 | `payment@airepro.local` | `demo-agent` | PAYMENT_AGENT |
 | `support@airepro.local` | `demo-agent` | SUPPORT_AGENT |
 | `ops@airepro.local` | `demo-agent` | OPERATIONS_AGENT |
+| `trainer1@airepro.local` | `Train@2026` | IDV_AGENT (Priya Sharma) |
+| `trainer2@airepro.local` | `Train@2026` | PAYMENT_AGENT (Rahul Mehta) |
+| `trainer3@airepro.local` | `Train@2026` | SUPPORT_AGENT (Ananya Gupta) |
+| `trainer4@airepro.local` | `Train@2026` | OPERATIONS_AGENT (Vikram Singh) |
+| `trainer5@airepro.local` | `Train@2026` | FRAUD_AGENT (Neha Kapoor) |
+
+Early production (`training.airepro.in`) uses `AUTH_MODE=demo` so these accounts work. Switch to `AUTH_MODE=obo` when OBO identities are ready.
 
 Reset DB + reseed: `npm run db:reset`
 

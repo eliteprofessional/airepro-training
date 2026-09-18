@@ -7,7 +7,8 @@ import dotenv from 'dotenv';
 
 import { createCorsOptions } from './cors.js';
 import { initDb } from './db/index.js';
-import { seedIfEmpty } from './db/seed.js';
+import { seedIfEmpty, ensureDemoUsers } from './db/seed.js';
+import { getAuthMode } from './auth/service.js';
 import authRoutes from './routes/auth.js';
 import portalRoutes from './routes/portal.js';
 import adminRoutes from './routes/admin.js';
@@ -19,6 +20,9 @@ dotenv.config({ path: path.join(ROOT_DIR, '.env') });
 
 initDb();
 seedIfEmpty();
+if (getAuthMode() === 'demo') {
+  ensureDemoUsers();
+}
 
 const PORT = Number(process.env.PORT) || 8787;
 const DIST_DIR = path.join(ROOT_DIR, 'dist');

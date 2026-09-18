@@ -101,6 +101,7 @@ pipeline {
                     -e CORS_ORIGIN="${CORS_ORIGIN}" \
                     -e TRAINING_DB_PATH=/app/data/training.sqlite \
                     --env-file "${SECRETS_FILE}" \
+                    -e "AUTH_MODE=${AUTH_MODE:-demo}" \
                     -v "${TRAINING_VOLUME}:/app/public/training" \
                     -v "${TRAINING_DATA_VOLUME}:/app/data" \
                     "${BACKEND_IMAGE}:${BUILD_NUMBER}"
@@ -119,7 +120,7 @@ pipeline {
                     -e HOST=0.0.0.0 \
                     -e SERVE_FRONTEND=false \
                     -e CORS_ORIGIN="${CORS_ORIGIN}" \
-                    -e "AUTH_MODE=${AUTH_MODE:-obo}" \
+                    -e "AUTH_MODE=${AUTH_MODE:-demo}" \
                     -e "OBO_API_BASE_URL=${OBO_API_BASE_URL:-}" \
                     -e "TRAINING_JWT_SECRET=${TRAINING_JWT_SECRET:-${ADMIN_TOKEN_SECRET}}" \
                     -e "ADMIN_TOKEN_SECRET=${ADMIN_TOKEN_SECRET:-${TRAINING_JWT_SECRET}}" \

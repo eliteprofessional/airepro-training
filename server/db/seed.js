@@ -1217,41 +1217,9 @@ export function seedIfEmpty() {
   db.exec('BEGIN');
   try {
     insertRoles(db);
-    insertUser(db, {
-      email: 'admin@airepro.local',
-      name: 'Training Admin',
-      department: 'Operations',
-      roles: [ROLES.SUPER_ADMIN],
-      password: 'demo-admin',
-    });
-    insertUser(db, {
-      email: 'idv@airepro.local',
-      name: 'IDV Demo Agent',
-      department: 'IDV',
-      roles: [ROLES.IDV_AGENT],
-      password: 'demo-agent',
-    });
-    insertUser(db, {
-      email: 'payment@airepro.local',
-      name: 'Payment Demo Agent',
-      department: 'Payments',
-      roles: [ROLES.PAYMENT_AGENT],
-      password: 'demo-agent',
-    });
-    insertUser(db, {
-      email: 'support@airepro.local',
-      name: 'Support Demo Agent',
-      department: 'Support',
-      roles: [ROLES.SUPPORT_AGENT],
-      password: 'demo-agent',
-    });
-    insertUser(db, {
-      email: 'ops@airepro.local',
-      name: 'Ops Demo Agent',
-      department: 'Operations',
-      roles: [ROLES.OPERATIONS_AGENT],
-      password: 'demo-agent',
-    });
+    for (const user of DEMO_USERS) {
+      insertUser(db, user);
+    }
     seedContent(db);
     db.exec('COMMIT');
     console.log('Seeded training database (demo users + Wave 1/2 content)');
@@ -1260,6 +1228,120 @@ export function seedIfEmpty() {
     db.exec('ROLLBACK');
     throw err;
   }
+}
+
+/** Demo accounts used for local + early production access (AUTH_MODE=demo). */
+export const DEMO_USERS = [
+  {
+    email: 'admin@airepro.local',
+    name: 'Training Admin',
+    department: 'Operations',
+    roles: [ROLES.SUPER_ADMIN],
+    password: 'demo-admin',
+  },
+  {
+    email: 'idv@airepro.local',
+    name: 'IDV Demo Agent',
+    department: 'IDV',
+    roles: [ROLES.IDV_AGENT],
+    password: 'demo-agent',
+  },
+  {
+    email: 'payment@airepro.local',
+    name: 'Payment Demo Agent',
+    department: 'Payments',
+    roles: [ROLES.PAYMENT_AGENT],
+    password: 'demo-agent',
+  },
+  {
+    email: 'support@airepro.local',
+    name: 'Support Demo Agent',
+    department: 'Support',
+    roles: [ROLES.SUPPORT_AGENT],
+    password: 'demo-agent',
+  },
+  {
+    email: 'ops@airepro.local',
+    name: 'Ops Demo Agent',
+    department: 'Operations',
+    roles: [ROLES.OPERATIONS_AGENT],
+    password: 'demo-agent',
+  },
+  {
+    email: 'trainer1@airepro.local',
+    name: 'Priya Sharma',
+    department: 'IDV',
+    roles: [ROLES.IDV_AGENT],
+    password: 'Train@2026',
+  },
+  {
+    email: 'trainer2@airepro.local',
+    name: 'Rahul Mehta',
+    department: 'Payments',
+    roles: [ROLES.PAYMENT_AGENT],
+    password: 'Train@2026',
+  },
+  {
+    email: 'trainer3@airepro.local',
+    name: 'Ananya Gupta',
+    department: 'Support',
+    roles: [ROLES.SUPPORT_AGENT],
+    password: 'Train@2026',
+  },
+  {
+    email: 'trainer4@airepro.local',
+    name: 'Vikram Singh',
+    department: 'Operations',
+    roles: [ROLES.OPERATIONS_AGENT],
+    password: 'Train@2026',
+  },
+  {
+    email: 'trainer5@airepro.local',
+    name: 'Neha Kapoor',
+    department: 'Fraud',
+    roles: [ROLES.FRAUD_AGENT],
+    password: 'Train@2026',
+  },
+];
+
+/**
+ * Upsert demo users + roles so AUTH_MODE=demo works on existing DBs
+ * (e.g. production volume that was seeded before trainers were added).
+ */
+export function ensureDemoUsers() {
+  const db = getDb();
+  insertRoles(db);
+  const ts = nowIso();
+  let created = 0;
+  let updated = 0;
+
+  for (const user of DEMO_USERS) {
+    const existing = db
+      .prepare('SELECT id FROM users WHERE lower(email) = lower(?)')
+      .get(user.email);
+    const hash = user.password ? hashPassword(user.password) : null;
+
+    if (existing) {
+      db.prepare(
+        `UPDATE users SET name = ?, department = ?, training_access = 1,
+         demo_password_hash = ?, updated_at = ? WHERE id = ?`,
+      ).run(user.name, user.department || null, hash, ts, existing.id);
+      db.prepare('DELETE FROM user_roles WHERE user_id = ?').run(existing.id);
+      const ur = db.prepare('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)');
+      for (const role of user.roles) {
+        ur.run(existing.id, role);
+      }
+      updated += 1;
+    } else {
+      insertUser(db, user);
+      created += 1;
+    }
+  }
+
+  if (created || updated) {
+    console.log(`Demo users ensured (created=${created}, updated=${updated})`);
+  }
+  return { created, updated };
 }
 
 export function verifyDemoPassword(user, password) {

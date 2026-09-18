@@ -16,10 +16,11 @@ data/
 *.sqlite-journal
 _spec_extract.md
 
-# Env (keep .env.example)
+# Env (keep examples / production template)
 .env
 .env.*
 !.env.example
+!.env.production
 
 # Editor directories and files
 .vscode/*

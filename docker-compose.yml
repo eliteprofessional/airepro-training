@@ -13,7 +13,7 @@ services:
       HOST: 0.0.0.0
       SERVE_FRONTEND: "false"
       CORS_ORIGIN: ${CORS_ORIGIN:-https://training.airepro.in}
-      AUTH_MODE: ${AUTH_MODE:-obo}
+      AUTH_MODE: ${AUTH_MODE:-demo}
       OBO_API_BASE_URL: ${OBO_API_BASE_URL:-}
       TRAINING_JWT_SECRET: ${TRAINING_JWT_SECRET:-${ADMIN_TOKEN_SECRET:-change-me-to-a-long-random-string}}
       ADMIN_TOKEN_SECRET: ${ADMIN_TOKEN_SECRET:-change-me-to-a-long-random-string}
