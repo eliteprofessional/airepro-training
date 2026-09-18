@@ -6,7 +6,7 @@ services:
     image: airepro-training-backend:latest
     container_name: airepro-training-backend
     ports:
-      - "${BACKEND_PORT:-1411}:8787"
+      - "${BACKEND_PORT:-1919}:8787"
     environment:
       NODE_ENV: production
       PORT: 8787
@@ -44,7 +44,7 @@ services:
     image: airepro-training-frontend:latest
     container_name: airepro-training-frontend
     ports:
-      - "${FRONTEND_PORT:-410}:80"
+      - "${FRONTEND_PORT:-1918}:80"
     depends_on:
       training-backend:
         condition: service_healthy

@@ -4,8 +4,8 @@
 
 | Service | Domain | Port |
 | --- | --- | --- |
-| Frontend nginx | `training.airepro.in` | `410` |
-| API | `training-s.airepro.in` | `1411` |
+| Frontend nginx | `training.airepro.in` | `1918` |
+| API | `training-s.airepro.in` | `1919` |
 
 Staging: `training-staging.airepro.in` / `training-s-staging.airepro.in` via env overrides.
 

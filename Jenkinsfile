@@ -2,14 +2,14 @@
  * Airepro Training — Jenkins Pipeline (split Docker FE/BE)
  *
  * Domains / ports (override via Jenkins job env):
- * - Frontend SPA: https://training.airepro.in  → 127.0.0.1:410
- * - Backend API:  https://training-s.airepro.in → 127.0.0.1:1411
+ * - Frontend SPA: https://training.airepro.in  → 127.0.0.1:1918
+ * - Backend API:  https://training-s.airepro.in → 127.0.0.1:1919
  *
  * Prerequisites:
  * - Docker on the agent. If jenkins is not in the `docker` group, set DOCKER='sudo docker'.
  * - Admin secrets via Jenkins env or ~/.secrets/airepro-training.env:
  *     ADMIN_PASSWORD, ADMIN_TOKEN_SECRET
- * - Reverse proxy / Cloudflare Tunnel should target loopback 410 and 1411.
+ * - Reverse proxy / Cloudflare Tunnel should target loopback 1918 and 1919.
  */
 
 pipeline {
@@ -26,8 +26,8 @@ pipeline {
         BACKEND_IMAGE       = "${env.BACKEND_IMAGE ?: 'airepro-training-backend'}"
         FRONTEND_CONTAINER  = "${env.FRONTEND_CONTAINER ?: 'airepro-training-frontend'}"
         BACKEND_CONTAINER   = "${env.BACKEND_CONTAINER ?: 'airepro-training-backend'}"
-        FRONTEND_PORT       = "${env.FRONTEND_PORT ?: '410'}"
-        BACKEND_PORT        = "${env.BACKEND_PORT ?: '1411'}"
+        FRONTEND_PORT       = "${env.FRONTEND_PORT ?: '1918'}"
+        BACKEND_PORT        = "${env.BACKEND_PORT ?: '1919'}"
         DOMAIN              = "${env.DOMAIN ?: 'training.airepro.in'}"
         BACKEND_DOMAIN      = "${env.BACKEND_DOMAIN ?: 'training-s.airepro.in'}"
         VITE_API_BASE_URL   = "${env.VITE_API_BASE_URL ?: 'https://training-s.airepro.in'}"
